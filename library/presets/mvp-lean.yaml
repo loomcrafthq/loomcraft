@@ -1,0 +1,28 @@
+name: MVP Lean
+description: Prototype rapide avec stack minimale. Vitesse et itération avant la perfection.
+agents:
+  - orchestrator
+  - frontend
+  - backend
+  - database
+skills:
+  - nextjs-conventions
+  - tailwind-patterns
+  - supabase-patterns
+constitution:
+  principles:
+    - Ship it — working software over perfect architecture
+    - Iterate fast — build the simplest thing that works, then improve
+    - Technical debt is acceptable — speed wins at the prototype stage
+    - Validate assumptions — build to learn, not to last
+  conventions:
+    - Prefer inline styles and co-located logic over abstractions
+    - Use Supabase client directly — skip custom API layers when possible
+    - Minimal component hierarchy — flatten where you can
+    - Skip extensive error handling — focus on happy path first
+    - One file per feature when practical
+context:
+  projectDescription: >
+    This is a lean MVP. Speed and iteration are prioritized over architecture.
+    The orchestrator coordinates a small team of frontend, backend, and database agents to ship
+    features as fast as possible.

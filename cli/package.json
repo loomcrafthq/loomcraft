@@ -1,0 +1,53 @@
+{
+  "name": "@loomcraft/cli",
+  "version": "1.1.0",
+  "description": "CLI to scaffold Claude Code projects with curated agents, skills, and presets",
+  "type": "module",
+  "license": "MIT",
+  "author": "folpe",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loomcrafthq/loomcraft",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/loomcrafthq/loomcraft/tree/main/cli#readme",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai-agents",
+    "cli",
+    "scaffolding",
+    "presets"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "loomcraft": "./dist/index.js",
+    "lc": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "data"
+  ],
+  "scripts": {
+    "prebuild": "node scripts/sync-library.js",
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.1",
+    "commander": "^13.1.0",
+    "gray-matter": "^4.0.3",
+    "picocolors": "^1.1.1",
+    "yaml": "^2.8.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsup": "^8.4.0",
+    "typescript": "^5"
+  }
+}

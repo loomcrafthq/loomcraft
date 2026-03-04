@@ -1,0 +1,32 @@
+name: Landing Page
+description: Site vitrine / marketing avec focus SEO, conversion, animations et responsive design.
+agents:
+  - orchestrator
+  - frontend
+  - ux-ui
+  - marketing
+  - performance
+  - review-qa
+skills:
+  - nextjs-conventions
+  - tailwind-patterns
+  - hero-copywriting
+  - seo-optimization
+  - ui-ux-guidelines
+constitution:
+  principles:
+    - Conversion-first — every section must guide visitors toward a clear CTA
+    - Performance is UX — aim for perfect Lighthouse scores
+    - Mobile-first responsive — design for small screens, enhance for large
+    - Accessible by default — semantic HTML, ARIA, keyboard navigation
+  conventions:
+    - Use Server Components and static generation for maximum performance
+    - Optimize all images with next/image and proper srcset
+    - Implement structured data (JSON-LD) for SEO
+    - Use CSS animations and transitions over JS-based animation libraries
+    - Ensure all interactive elements have visible focus states
+context:
+  projectDescription: >
+    This is a landing page / marketing site. It focuses on SEO, conversion
+    optimization, and fast loading. The orchestrator delegates visual tasks to the frontend and
+    ux-ui agents, copywriting to marketing, and performance audits to the performance agent.

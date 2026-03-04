@@ -1,0 +1,40 @@
+name: E-Commerce
+description: Boutique en ligne avec catalogue, panier, checkout Stripe et emails transactionnels.
+agents:
+  - orchestrator
+  - frontend
+  - backend
+  - database
+  - security
+  - tests
+  - review-qa
+  - ux-ui
+  - performance
+  - marketing
+skills:
+  - nextjs-conventions
+  - tailwind-patterns
+  - hero-copywriting
+  - supabase-patterns
+  - stripe-integration
+  - shadcn-ui
+  - seo-optimization
+  - api-design
+  - ui-ux-guidelines
+constitution:
+  principles:
+    - Trust through UX — clear pricing, no surprise fees, transparent shipping
+    - Payment security — never handle raw card data, always use Stripe Elements
+    - SEO drives traffic — product pages must be indexable with structured data
+    - Performance converts — every 100ms of load time impacts conversion rate
+  conventions:
+    - Use Stripe Checkout or Payment Elements — never collect card details directly
+    - Implement webhook handlers for Stripe events (payment success, refund, etc.)
+    - Use ISR or SSG for product catalog pages for performance
+    - Add JSON-LD structured data for products (price, availability, reviews)
+    - Implement optimistic cart updates with server validation
+context:
+  projectDescription: >
+    This is an e-commerce application. It includes product catalog, shopping
+    cart, Stripe checkout, and transactional emails. The orchestrator coordinates the full agent
+    team including marketing for copywriting and SEO.

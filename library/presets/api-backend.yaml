@@ -1,0 +1,31 @@
+name: API Backend
+description: API / service backend avec focus sécurité, validation, tests et performance.
+agents:
+  - orchestrator
+  - backend
+  - database
+  - security
+  - tests
+  - review-qa
+  - performance
+skills:
+  - nextjs-conventions
+  - supabase-patterns
+  - api-design
+constitution:
+  principles:
+    - Security first — validate all inputs, sanitize all outputs
+    - Type-safe contracts — use Zod schemas as single source of truth
+    - Test everything — unit tests for logic, integration tests for endpoints
+    - Fail gracefully — meaningful error messages, proper HTTP status codes
+  conventions:
+    - Define Zod schemas for all request/response payloads
+    - Use middleware for auth, rate limiting, and CORS
+    - Implement proper error handling with consistent error response format
+    - Write integration tests for every endpoint
+    - Use database transactions for multi-step mutations
+context:
+  projectDescription: >
+    This is a backend API service. It uses Next.js API Routes with Supabase
+    as the database layer. The orchestrator delegates security concerns to the security agent,
+    database schema work to the database agent, and testing to the tests agent.

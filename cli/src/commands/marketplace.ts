@@ -1,0 +1,248 @@
+import pc from "picocolors";
+import {
+  saveLocalAgent,
+  saveLocalSkill,
+  saveLocalPreset,
+  saveLocalMeta,
+  getLocalMeta,
+  listLocalResources,
+} from "../lib/local-library.js";
+import type { SkillFile } from "../lib/library.js";
+
+const DEFAULT_API_URL = "https://loomcraft.dev";
+
+interface MarketplaceItem {
+  id: string;
+  type: string;
+  slug: string;
+  title: string;
+  description: string;
+  authorName: string | null;
+  installCount: number;
+}
+
+interface ResourceFile {
+  relativePath: string;
+  content: string;
+}
+
+interface InstallResponse {
+  resource: {
+    id: string;
+    type: string;
+    slug: string;
+    title: string;
+    content: string;
+    files: ResourceFile[] | null;
+    version: number;
+    contentHash: string | null;
+  };
+}
+
+function padEnd(str: string, len: number): string {
+  return str + " ".repeat(Math.max(0, len - str.length));
+}
+
+function truncate(str: string, max: number): string {
+  if (str.length <= max) return str;
+  return str.slice(0, max - 1) + "…";
+}
+
+function getApiUrl(): string {
+  return process.env.LOOMCRAFT_API_URL ?? process.env.LOOM_API_URL ?? DEFAULT_API_URL;
+}
+
+export async function marketplaceSearchCommand(
+  query?: string,
+  opts?: { type?: string; sort?: string }
+): Promise<void> {
+  try {
+    const url = new URL("/api/cli/marketplace", getApiUrl());
+    if (query) url.searchParams.set("q", query);
+    if (opts?.type) url.searchParams.set("type", opts.type);
+    if (opts?.sort) url.searchParams.set("sort", opts.sort);
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = (await res.json()) as { items: MarketplaceItem[] };
+
+    if (data.items.length === 0) {
+      console.log(pc.dim("\n  No results found.\n"));
+      return;
+    }
+
+    console.log(
+      pc.bold(pc.cyan(`\n  Marketplace${query ? ` — "${query}"` : ""}`))
+    );
+    console.log(pc.dim("  " + "─".repeat(70)));
+
+    for (const item of data.items) {
+      const type = pc.dim(`[${item.type}]`);
+      const installs = pc.dim(`↓${item.installCount}`);
+      const author = item.authorName ? pc.dim(`by ${item.authorName}`) : "";
+      console.log(
+        `  ${padEnd(pc.green(item.slug), 25)} ${padEnd(type, 14)} ${padEnd(truncate(item.title, 25), 27)} ${installs} ${author}`
+      );
+    }
+
+    console.log(
+      pc.dim(
+        `\n  Install with: ${pc.reset("loomcraft marketplace install <slug>")}\n`
+      )
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(pc.red(`\n  ✗ ${error.message}\n`));
+    } else {
+      console.error(pc.red("\n  ✗ Could not reach the marketplace.\n"));
+    }
+    process.exit(1);
+  }
+}
+
+export async function marketplaceInstallCommand(
+  slug: string
+): Promise<void> {
+  try {
+    const url = new URL("/api/cli/marketplace/install", getApiUrl());
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    });
+
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(body.error ?? `HTTP ${res.status}`);
+    }
+
+    const data = (await res.json()) as InstallResponse;
+    const r = data.resource;
+
+    // Save to ~/.loom/library/
+    if (r.type === "agent") {
+      saveLocalAgent(r.slug, r.content);
+    } else if (r.type === "skill") {
+      const files: SkillFile[] = r.files?.length
+        ? r.files.map((f) => ({ relativePath: f.relativePath, content: f.content }))
+        : [{ relativePath: "SKILL.md", content: r.content }];
+      saveLocalSkill(r.slug, files);
+    } else if (r.type === "preset") {
+      saveLocalPreset(r.slug, r.content);
+    }
+
+    // Save version metadata
+    saveLocalMeta(r.type as "agent" | "skill" | "preset", r.slug, {
+      sourceSlug: r.slug,
+      version: r.version,
+      contentHash: r.contentHash,
+    });
+
+    console.log(
+      pc.green(`\n  ✓ Installed "${r.title}" (${r.type}) v${r.version} to ~/.loom/library/\n`)
+    );
+    console.log(
+      pc.dim(`  Use it: loomcraft add ${r.type} ${r.slug}\n`)
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(pc.red(`\n  ✗ ${error.message}\n`));
+    } else {
+      console.error(pc.red("\n  ✗ Installation failed.\n"));
+    }
+    process.exit(1);
+  }
+}
+
+interface CheckUpdateResponse {
+  slug: string;
+  version: number;
+  contentHash: string | null;
+}
+
+export async function marketplaceUpdateCommand(
+  slug?: string
+): Promise<void> {
+  try {
+    const apiUrl = getApiUrl();
+
+    // Determine which resources to check
+    const toCheck: { slug: string; type: "agent" | "skill" | "preset" }[] = [];
+
+    if (slug) {
+      // Check all types for this slug
+      for (const type of ["agent", "skill", "preset"] as const) {
+        const meta = getLocalMeta(type, slug);
+        if (meta) {
+          toCheck.push({ slug, type });
+          break;
+        }
+      }
+      if (toCheck.length === 0) {
+        console.log(pc.yellow(`\n  No installed resource found with slug "${slug}"\n`));
+        return;
+      }
+    } else {
+      // Check all installed resources that have meta
+      const items = listLocalResources();
+      for (const item of items) {
+        const meta = getLocalMeta(item.type, item.slug);
+        if (meta) {
+          toCheck.push({ slug: item.slug, type: item.type });
+        }
+      }
+      if (toCheck.length === 0) {
+        console.log(pc.dim("\n  No marketplace-installed resources found.\n"));
+        return;
+      }
+    }
+
+    let updatedCount = 0;
+
+    for (const item of toCheck) {
+      const meta = getLocalMeta(item.type, item.slug);
+      if (!meta) continue;
+
+      // Check for update
+      const checkUrl = new URL("/api/cli/marketplace/check-update", apiUrl);
+      checkUrl.searchParams.set("slug", item.slug);
+
+      const checkRes = await fetch(checkUrl);
+      if (!checkRes.ok) continue;
+
+      const remote = (await checkRes.json()) as CheckUpdateResponse;
+
+      if (remote.version <= meta.version) {
+        console.log(
+          pc.dim(`  ${item.slug} — up to date (v${meta.version})`)
+        );
+        continue;
+      }
+
+      // Update available — re-install
+      console.log(
+        pc.cyan(`  ${item.slug} — v${meta.version} → v${remote.version}`)
+      );
+
+      await marketplaceInstallCommand(item.slug);
+      updatedCount++;
+    }
+
+    if (updatedCount === 0) {
+      console.log(pc.green("\n  All resources are up to date.\n"));
+    } else {
+      console.log(
+        pc.green(`\n  ✓ Updated ${updatedCount} resource${updatedCount > 1 ? "s" : ""}.\n`)
+      );
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(pc.red(`\n  ✗ ${error.message}\n`));
+    } else {
+      console.error(pc.red("\n  ✗ Update check failed.\n"));
+    }
+    process.exit(1);
+  }
+}
