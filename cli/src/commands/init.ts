@@ -17,6 +17,7 @@ import { writeAgent, writeSkillDir, writeContextFile, writeOrchestrator } from "
 import { generateContextFile, generateOrchestrator, type AgentWithSkills } from "../lib/generator.js";
 import { type TargetConfig, BUILTIN_TARGETS, resolveTarget } from "../lib/target.js";
 import { saveConfig } from "../lib/config.js";
+import { validateTargetDir } from "../lib/security.js";
 
 export interface InitOptions {
   addAgent?: string[];
@@ -83,7 +84,11 @@ async function interactiveInit(target: TargetConfig, targetExplicit?: boolean): 
       const customDir = await p.text({
         message: "Target directory",
         placeholder: ".myruntime",
-        validate: (v) => (!v || v.length === 0 ? "Required" : undefined),
+        validate: (v) => {
+          if (!v || v.length === 0) return "Required";
+          try { validateTargetDir(v); } catch (e) { return (e as Error).message; }
+          return undefined;
+        },
       });
       if (p.isCancel(customDir)) { p.cancel("Operation cancelled."); process.exit(0); }
 

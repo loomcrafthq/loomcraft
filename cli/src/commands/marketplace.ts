@@ -8,6 +8,7 @@ import {
   listLocalResources,
 } from "../lib/local-library.js";
 import type { SkillFile } from "../lib/library.js";
+import { validateSlug, fetchWithTimeout, verifyContentHash } from "../lib/security.js";
 
 const DEFAULT_API_URL = "https://loomcraft.dev";
 
@@ -49,7 +50,12 @@ function truncate(str: string, max: number): string {
 }
 
 function getApiUrl(): string {
-  return process.env.LOOMCRAFT_API_URL ?? process.env.LOOM_API_URL ?? DEFAULT_API_URL;
+  const url = process.env.LOOMCRAFT_API_URL ?? process.env.LOOM_API_URL ?? DEFAULT_API_URL;
+  // Only allow https in production (allow http for local dev)
+  if (!url.startsWith("https://") && !url.startsWith("http://localhost") && !url.startsWith("http://127.0.0.1")) {
+    return DEFAULT_API_URL;
+  }
+  return url;
 }
 
 export async function marketplaceSearchCommand(
@@ -62,7 +68,7 @@ export async function marketplaceSearchCommand(
     if (opts?.type) url.searchParams.set("type", opts.type);
     if (opts?.sort) url.searchParams.set("sort", opts.sort);
 
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url.toString());
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = (await res.json()) as { items: MarketplaceItem[] };
@@ -92,7 +98,9 @@ export async function marketplaceSearchCommand(
       )
     );
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
+    } else if (error instanceof Error) {
       console.error(pc.red(`\n  ✗ ${error.message}\n`));
     } else {
       console.error(pc.red("\n  ✗ Could not reach the marketplace.\n"));
@@ -105,9 +113,11 @@ export async function marketplaceInstallCommand(
   slug: string
 ): Promise<void> {
   try {
+    validateSlug(slug);
+
     const url = new URL("/api/cli/marketplace/install", getApiUrl());
 
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url.toString(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slug }),
@@ -120,6 +130,12 @@ export async function marketplaceInstallCommand(
 
     const data = (await res.json()) as InstallResponse;
     const r = data.resource;
+
+    // Verify content integrity
+    const hashValid = await verifyContentHash(r.content, r.contentHash);
+    if (!hashValid) {
+      throw new Error("Content integrity check failed — hash mismatch");
+    }
 
     // Save to ~/.loomcraft/library/
     if (r.type === "agent") {
@@ -147,7 +163,9 @@ export async function marketplaceInstallCommand(
       pc.dim(`  Use it: loomcraft add ${r.type} ${r.slug}\n`)
     );
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
+    } else if (error instanceof Error) {
       console.error(pc.red(`\n  ✗ ${error.message}\n`));
     } else {
       console.error(pc.red("\n  ✗ Installation failed.\n"));
@@ -166,6 +184,8 @@ export async function marketplaceUpdateCommand(
   slug?: string
 ): Promise<void> {
   try {
+    if (slug) validateSlug(slug);
+
     const apiUrl = getApiUrl();
 
     // Determine which resources to check
@@ -209,7 +229,7 @@ export async function marketplaceUpdateCommand(
       const checkUrl = new URL("/api/cli/marketplace/check-update", apiUrl);
       checkUrl.searchParams.set("slug", item.slug);
 
-      const checkRes = await fetch(checkUrl);
+      const checkRes = await fetchWithTimeout(checkUrl.toString());
       if (!checkRes.ok) continue;
 
       const remote = (await checkRes.json()) as CheckUpdateResponse;
@@ -238,7 +258,9 @@ export async function marketplaceUpdateCommand(
       );
     }
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
+    } else if (error instanceof Error) {
       console.error(pc.red(`\n  ✗ ${error.message}\n`));
     } else {
       console.error(pc.red("\n  ✗ Update check failed.\n"));

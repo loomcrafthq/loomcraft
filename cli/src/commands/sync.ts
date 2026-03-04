@@ -17,7 +17,7 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
   const skillsDir = path.join(cwd, target.dir, target.skillsSubdir);
 
   if (!fs.existsSync(agentsDir)) {
-    console.error(pc.red(`\n  Error: No agents directory found at ${agentsDir}\n`));
+    console.error(pc.red(`\n  Error: No agents directory found. Expected ${target.dir}/${target.agentsSubdir}/\n`));
     console.log(pc.dim(`  Run "loomcraft init" first.\n`));
     process.exit(1);
   }

@@ -26,7 +26,13 @@ export function loadConfig(cwd = process.cwd()): TargetConfig | null {
   if (!fs.existsSync(filePath)) return null;
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    const config = JSON.parse(raw) as LoomcraftConfig;
+    const parsed = JSON.parse(raw);
+    // Only extract known fields to prevent prototype pollution
+    const config: LoomcraftConfig = {
+      target: String(parsed.target ?? ""),
+      targetDir: String(parsed.targetDir ?? ""),
+      contextFile: String(parsed.contextFile ?? ""),
+    };
     return resolveTarget(config.target, config.targetDir, config.contextFile);
   } catch {
     return null;

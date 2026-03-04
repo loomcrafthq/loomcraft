@@ -33,6 +33,21 @@ export const BUILTIN_TARGETS: Record<string, TargetConfig> = {
 
 export const DEFAULT_TARGET = "claude-code";
 
+import path from "node:path";
+
+function validateCustomTargetDir(dir: string): void {
+  if (!dir || dir.includes("\0")) {
+    throw new Error("Invalid target directory");
+  }
+  if (path.isAbsolute(dir)) {
+    throw new Error("Target directory must be a relative path");
+  }
+  const normalized = path.normalize(dir);
+  if (normalized.startsWith("..")) {
+    throw new Error("Target directory must not traverse outside the project");
+  }
+}
+
 export function listTargetNames(): string[] {
   return Object.keys(BUILTIN_TARGETS);
 }
@@ -51,6 +66,8 @@ export function resolveTarget(
         'Target "custom" requires --target-dir and --context-file.'
       );
     }
+    // Validate custom paths
+    validateCustomTargetDir(customDir);
     return {
       name: "custom",
       description: `Custom — ${customDir}/ + ${customContextFile}`,

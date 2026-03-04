@@ -3,6 +3,7 @@ import path from "node:path";
 import type { TargetConfig } from "./target.js";
 import type { SkillFile } from "./library.js";
 import { mergeContextFile, type AgentInfo } from "./generator.js";
+import { sanitizeRelativePath } from "./security.js";
 
 function ensureDir(dirPath: string): void {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -32,7 +33,8 @@ export function writeSkillDir(
 ): string {
   const dir = path.join(cwd, target.dir, target.skillsSubdir, slug);
   for (const file of files) {
-    const filePath = path.join(dir, file.relativePath);
+    const safePath = sanitizeRelativePath(file.relativePath);
+    const filePath = path.join(dir, safePath);
     ensureDir(path.dirname(filePath));
     fs.writeFileSync(filePath, file.content, "utf-8");
   }

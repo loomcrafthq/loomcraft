@@ -68,17 +68,36 @@ Regenerate the orchestrator and update the context file's agents/skills sections
 loomcraft sync
 ```
 
+### `loomcraft import [path]`
+
+Import agents and skills from an existing project with `.claude/` or `.cursor/` setup.
+
+```bash
+loomcraft import                         # scan current directory
+loomcraft import /path/to/project        # scan specific project
+loomcraft import --dry-run               # preview without writing
+loomcraft import --json                  # output as JSON (for backoffice import)
+```
+
+Detects existing agents and skills, deduplicates against bundled and local library, and saves new items to `~/.loomcraft/library/`. Optionally generates a preset from the imported resources.
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Preview detected resources without writing |
+| `--json` | Output scan result as JSON for use with the web UI |
+
 ### `loomcraft marketplace`
 
 Browse and install community-contributed resources.
 
 ```bash
-loomcraft marketplace search              # list all
-loomcraft marketplace search tailwind     # search by keyword
+loomcraft marketplace list               # list all
+loomcraft marketplace search tailwind    # search by keyword
 loomcraft marketplace install ticket-craft
+loomcraft marketplace update             # check for updates
 ```
 
-Alias: `lc mp search`
+Alias: `lc mp list`, `lc mp search`
 
 ## What's generated
 
@@ -220,6 +239,10 @@ Every preset includes the workflow agents (orchestrator, brainstormer, planner) 
 | Claude Code | `--claude` | `.claude/agents/` | `CLAUDE.md` |
 | Cursor | `--cursor` | `.cursor/agents/` | `.cursorrules` |
 | Custom | `--target custom --target-dir .mydir --context-file CONTEXT.md` | `.mydir/agents/` | `CONTEXT.md` |
+
+## Security
+
+See [SECURITY.md](../SECURITY.md) for our security policy and how to report vulnerabilities.
 
 ## License
 

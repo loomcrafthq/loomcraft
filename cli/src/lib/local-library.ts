@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type { SkillFile } from "./library.js";
+import { sanitizeRelativePath, safeWalkDir } from "./security.js";
 
 const LIBRARY_DIR = path.join(os.homedir(), ".loomcraft", "library");
 
@@ -24,7 +25,8 @@ export function saveLocalAgent(slug: string, content: string): string {
 export function saveLocalSkill(slug: string, files: SkillFile[]): string {
   const dir = path.join(LIBRARY_DIR, "skills", slug);
   for (const file of files) {
-    const filePath = path.join(dir, file.relativePath);
+    const safePath = sanitizeRelativePath(file.relativePath);
+    const filePath = path.join(dir, safePath);
     ensureDir(path.dirname(filePath));
     fs.writeFileSync(filePath, file.content, "utf-8");
   }
@@ -99,31 +101,7 @@ export function getLocalAgent(
   }
 }
 
-const TEXT_EXTENSIONS = new Set([
-  ".md", ".ts", ".js", ".sh", ".dot", ".yaml", ".yml", ".json", ".css", ".html",
-]);
-
-function walkDir(dir: string, base = ""): string[] {
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  const results: string[] = [];
-  for (const entry of entries) {
-    const rel = base ? `${base}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      results.push(...walkDir(path.join(dir, entry.name), rel));
-    } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (TEXT_EXTENSIONS.has(ext)) {
-        results.push(rel);
-      }
-    }
-  }
-  return results;
-}
+// walkDir and TEXT_EXTENSIONS moved to security.ts as safeWalkDir
 
 export function getLocalSkillWithFiles(
   slug: string
@@ -131,7 +109,7 @@ export function getLocalSkillWithFiles(
   const dir = path.join(LIBRARY_DIR, "skills", slug);
   if (!fs.existsSync(dir)) return null;
 
-  const relativePaths = walkDir(dir);
+  const relativePaths = safeWalkDir(dir);
   if (relativePaths.length === 0) return null;
 
   const files: SkillFile[] = relativePaths.map((relativePath) => ({

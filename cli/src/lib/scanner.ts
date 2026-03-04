@@ -4,6 +4,7 @@ import matter from "gray-matter";
 import YAML from "yaml";
 import { BUILTIN_TARGETS } from "./target.js";
 import type { SkillFile } from "./library.js";
+import { safeWalkDir } from "./security.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,36 +37,6 @@ export interface ScanResult {
   agents: ScannedAgent[];
   skills: ScannedSkill[];
   skipped: SkippedItem[];
-}
-
-// ---------------------------------------------------------------------------
-// Helpers (same patterns as local-library.ts)
-// ---------------------------------------------------------------------------
-
-const TEXT_EXTENSIONS = new Set([
-  ".md", ".ts", ".js", ".sh", ".dot", ".yaml", ".yml", ".json", ".css", ".html",
-]);
-
-function walkDir(dir: string, base = ""): string[] {
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  const results: string[] = [];
-  for (const entry of entries) {
-    const rel = base ? `${base}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      results.push(...walkDir(path.join(dir, entry.name), rel));
-    } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (TEXT_EXTENSIONS.has(ext)) {
-        results.push(rel);
-      }
-    }
-  }
-  return results;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,10 +75,10 @@ export function scanTarget(
         .map((d) => d.name);
     } catch (err) {
       skipped.push({
-        path: agentsDir,
+        path: `${config.dir}/${config.agentsSubdir}`,
         reason: (err as NodeJS.ErrnoException).code === "EACCES"
           ? "Permission denied"
-          : `Cannot read directory: ${(err as Error).message}`,
+          : "Cannot read directory",
       });
       agentDirs = [];
     }
@@ -169,17 +140,17 @@ export function scanTarget(
         .map((d) => d.name);
     } catch (err) {
       skipped.push({
-        path: skillsDir,
+        path: `${config.dir}/${config.skillsSubdir}`,
         reason: (err as NodeJS.ErrnoException).code === "EACCES"
           ? "Permission denied"
-          : `Cannot read directory: ${(err as Error).message}`,
+          : "Cannot read directory",
       });
       skillDirs = [];
     }
 
     for (const slug of skillDirs) {
       const skillDir = path.join(skillsDir, slug);
-      const relativePaths = walkDir(skillDir);
+      const relativePaths = safeWalkDir(skillDir);
 
       if (relativePaths.length === 0) {
         skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: "Empty directory" });
@@ -214,7 +185,7 @@ export function scanTarget(
         if ((err as NodeJS.ErrnoException).code === "EACCES") {
           skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: "Permission denied" });
         } else {
-          skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: `Error: ${(err as Error).message}` });
+          skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: "Cannot read files" });
         }
       }
     }

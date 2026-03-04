@@ -124,7 +124,8 @@ const mp = program
   .description("Browse and install community resources");
 
 mp.command("search")
-  .description("Search the marketplace")
+  .alias("list")
+  .description("Search the marketplace (alias: list)")
   .argument("[query]", "Search query")
   .option("--type <type>", "Filter by type: agent, skill, preset")
   .option("--sort <sort>", "Sort: popular, recent", "popular")

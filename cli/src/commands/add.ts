@@ -4,6 +4,7 @@ import { getLocalAgent, getLocalSkillWithFiles } from "../lib/local-library.js";
 import { writeAgent, writeSkillDir } from "../lib/writer.js";
 import type { TargetConfig } from "../lib/target.js";
 import { syncCommand } from "./sync.js";
+import { validateSlug } from "../lib/security.js";
 
 export async function addCommand(
   type: string,
@@ -12,6 +13,13 @@ export async function addCommand(
 ): Promise<void> {
   if (type !== "agent" && type !== "skill") {
     console.error(pc.red(`\n  Error: Invalid type "${type}". Use "agent" or "skill".\n`));
+    process.exit(1);
+  }
+
+  try {
+    validateSlug(slug);
+  } catch (err) {
+    console.error(pc.red(`\n  Error: ${(err as Error).message}\n`));
     process.exit(1);
   }
 

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import YAML from "yaml";
+import { safeWalkDir } from "./security.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "../data");
@@ -68,26 +69,7 @@ export interface SkillFile {
   content: string;
 }
 
-const TEXT_EXTENSIONS = new Set([
-  ".md", ".ts", ".js", ".sh", ".dot", ".yaml", ".yml", ".json", ".css", ".html",
-]);
-
-function walkDir(dir: string, base = ""): string[] {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const results: string[] = [];
-  for (const entry of entries) {
-    const rel = base ? `${base}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      results.push(...walkDir(path.join(dir, entry.name), rel));
-    } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (TEXT_EXTENSIONS.has(ext)) {
-        results.push(rel);
-      }
-    }
-  }
-  return results;
-}
+// walkDir and TEXT_EXTENSIONS moved to security.ts as safeWalkDir
 
 // --- Public API ---
 
@@ -186,7 +168,7 @@ export async function getSkillWithFiles(
   const mainPath = path.join(skillDir, "SKILL.md");
   const mainContent = fs.readFileSync(mainPath, "utf-8");
 
-  const relativePaths = walkDir(skillDir);
+  const relativePaths = safeWalkDir(skillDir);
   const files: SkillFile[] = relativePaths.map((relativePath) => ({
     relativePath,
     content: fs.readFileSync(path.join(skillDir, relativePath), "utf-8"),
