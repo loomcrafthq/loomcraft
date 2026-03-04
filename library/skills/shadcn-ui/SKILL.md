@@ -117,6 +117,43 @@ Structure pages with Cards for consistent visual hierarchy:
 - Use `role` and `aria-*` attributes when composing custom components.
 - Never block paste in `input` or `textarea` elements.
 
+## Do
+
+- Use ShadCN primitives before building anything custom — check the component library first.
+- Use `cn()` from `@/lib/utils` for all conditional class merging.
+- Use `AlertDialog` for destructive actions — never a plain `Dialog`.
+- Use `FormMessage` for inline validation errors in every form field.
+- Use `Skeleton` components for loading states in async data areas.
+- Provide `aria-label` on every icon-only `Button`.
+- Use `Sheet` for mobile navigation and side panels instead of custom drawers.
+- Wrap charts in `Card` with descriptive `CardHeader` for context.
+- Install components individually with `npx shadcn@latest add` — only what you need.
+
+## Don't
+
+- Don't rebuild keyboard navigation, focus traps, or dismiss behavior — use the primitives.
+- Don't mix Radix, Headless UI, and React Aria in the same surface.
+- Don't use `h-screen` — use `h-dvh` for correct mobile viewport height.
+- Don't add gradients or glow effects unless explicitly requested.
+- Don't leave empty states blank — always provide a message and a clear next action.
+- Don't hardcode hex colors — use semantic tokens from the ShadCN theme system.
+- Don't use `Dialog` for destructive confirmations — use `AlertDialog`.
+- Don't install all ShadCN components at once — install individually as needed.
+- Don't block paste on `input` or `textarea` elements.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|-------------|---------|-----|
+| **Custom modal from scratch** | Missing focus trap, escape handling, scroll lock | Use `Dialog` or `AlertDialog` from ShadCN |
+| **Plain `Dialog` for delete** | No forced confirmation, easy accidental deletion | Use `AlertDialog` with explicit confirm/cancel |
+| **Mixing component libraries** | Conflicting styles, broken focus management | Stick to ShadCN/Radix for all primitives |
+| **`select` HTML element** | Inconsistent styling, no search/filter support | Use ShadCN `Select` or `Combobox` |
+| **Manual form validation** | Inconsistent error handling, no schema reuse | Use `react-hook-form` + `zod` + ShadCN `Form` |
+| **Blank empty state** | User confusion, no clear path forward | Add message + primary action `Button` |
+| **Inline hex colors** | Breaks dark mode, inconsistent theming | Use `bg-background`, `text-foreground`, etc. |
+| **`onClick` on `div`** | Not keyboard accessible, no focus state | Use `Button` with appropriate `variant` |
+
 ## Animation
 
 - Never add animation unless explicitly requested.

@@ -13,7 +13,7 @@ skills:
   - ui-ux-guidelines
   - shadcn-ui
   - tailwind-patterns
-  - table-pagination
+  - form-validation
 model: inherit
 ---
 

@@ -1,0 +1,47 @@
+name: Mobile
+description: React Native / Expo mobile application with Supabase backend and native UI patterns.
+agents:
+  - orchestrator
+  - brainstormer
+  - planner
+  - frontend
+  - backend
+  - database
+  - ux-ui
+  - tests
+  - review-qa
+  - performance
+skills:
+  - brainstorming
+  - task-planning
+  - code-review
+  - project-bootstrap
+  - react-native-patterns
+  - supabase-patterns
+  - ui-ux-guidelines
+  - testing-patterns
+  - api-design
+  - env-validation
+pipeline:
+  - brainstorm
+  - plan
+  - dev
+  - review
+  - test
+constitution:
+  principles:
+    - Native feel — follow platform conventions for iOS and Android
+    - Offline-first — design for intermittent connectivity
+    - Performance on device — optimize for mid-range mobile hardware
+    - Type safety — TypeScript strict mode across the entire codebase
+  conventions:
+    - Use Expo Router for navigation
+    - Supabase for auth, database, and real-time sync
+    - Test on both iOS and Android simulators
+    - Follow platform-specific UI guidelines (HIG, Material Design)
+    - Use responsive units and safe area insets
+context:
+  projectDescription: >
+    This is a mobile application built with React Native and Expo. The orchestrator coordinates
+    feature brainstorming, task planning, cross-platform development, and testing. Supabase provides
+    the backend infrastructure.

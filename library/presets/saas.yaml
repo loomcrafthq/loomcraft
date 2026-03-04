@@ -1,0 +1,65 @@
+name: SaaS
+description: Full-stack SaaS web application with auth, billing, multi-agent pipeline, and complete testing.
+agents:
+  - orchestrator
+  - brainstormer
+  - planner
+  - frontend
+  - backend
+  - database
+  - ux-ui
+  - marketing
+  - security
+  - performance
+  - tests
+  - review-qa
+  - devops
+skills:
+  - brainstorming
+  - task-planning
+  - code-review
+  - project-bootstrap
+  - auth-rbac
+  - better-auth-patterns
+  - stripe-integration
+  - i18n-patterns
+  - layered-architecture
+  - drizzle-patterns
+  - server-actions-patterns
+  - form-validation
+  - react-query-patterns
+  - table-pagination
+  - testing-patterns
+  - resend-email
+  - env-validation
+  - nextjs-conventions
+  - tailwind-patterns
+  - shadcn-ui
+  - api-design
+  - ui-ux-guidelines
+  - seo-optimization
+  - hero-copywriting
+pipeline:
+  - brainstorm
+  - plan
+  - dev
+  - review
+  - test
+constitution:
+  principles:
+    - Ship fast, iterate often — prefer working software over perfect plans
+    - User-first design — every feature must solve a real user problem
+    - Type safety everywhere — leverage TypeScript strict mode
+    - Convention over configuration — follow established patterns
+    - Security by default — auth and validation on every boundary
+  conventions:
+    - Use Server Components by default, Client Components only when needed
+    - Server Actions for all mutations
+    - Zod validation at API boundaries
+    - Mobile-first responsive design
+    - Semantic HTML with ARIA attributes for accessibility
+context:
+  projectDescription: >
+    This is a SaaS application built with Next.js, using a multi-agent development pipeline.
+    The orchestrator coordinates brainstorming, planning, development, review, and testing phases.
+    Each agent follows domain-specific conventions defined in linked skills.

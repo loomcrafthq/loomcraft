@@ -147,3 +147,38 @@ export async function withDynamicAuth() {
 - Sanitize user input before database queries.
 - Use parameterized queries — never string concatenation for SQL.
 - Set security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`.
+
+## Do
+
+- Validate all inputs (body, params, query, headers) with Zod schemas at the API boundary before any logic runs.
+- Return consistent response shapes: `{ data }` for success, `{ error, code }` for errors.
+- Use auth wrappers (`withAuth()`, `withAdmin()`) on every protected endpoint for uniform enforcement.
+- Route all calls through facades; never call services directly from route handlers or pages.
+- Return appropriate HTTP status codes (201 for create, 204 for delete, 400 for validation, etc.).
+- Log errors server-side with request context (method, path, user ID) for debugging.
+- Use cursor-based pagination for large datasets; default limit to 20, max to 100.
+- Set explicit CORS origins in production; never use wildcard `*`.
+
+## Don't
+
+- Don't expose stack traces, internal error messages, or database details in API responses.
+- Don't trust client-provided user IDs or roles; always extract identity from the session or token.
+- Don't use string concatenation for SQL queries; always use parameterized queries.
+- Don't nest sub-resources deeper than one level (`/posts/:id/comments` is fine, `/posts/:id/comments/:cid/likes` is not).
+- Don't return 200 for every response; use the correct status code to communicate what happened.
+- Don't skip validation on query parameters or path parameters; they are user input too.
+- Don't use `GET` for mutations or `POST` for reads; use HTTP methods semantically.
+- Don't create custom error shapes per endpoint; use one project-wide error format.
+- Don't rely solely on middleware for auth; add route-level permission checks for resource ownership.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Leaking Internals** | Returning raw database errors or stack traces in production responses, exposing schema and code paths. | Catch all errors at the handler level; return generic messages with error codes. |
+| **Body-Only Validation** | Validating the request body but ignoring path params and query strings, allowing injection or type errors. | Validate all input sources (body, params, query, headers) with Zod schemas. |
+| **Trust-the-Client Auth** | Reading `userId` or `role` from the request body instead of the server-side session/token. | Always extract identity from `withAuth()` or the session; never from client-submitted data. |
+| **God Route Handler** | Putting validation, auth, business logic, and DB queries all in one route handler function. | Use facades to orchestrate, services for logic, and keep the handler as a thin adapter. |
+| **Inconsistent Errors** | Each endpoint returning errors in a different shape, forcing clients to handle multiple formats. | Standardize on `{ error: string, code: string, details?: array }` across all endpoints. |
+| **Offset Pagination at Scale** | Using `OFFSET` pagination on tables with millions of rows, causing slow queries as page numbers grow. | Switch to cursor-based pagination (`WHERE id > cursor LIMIT n`) for large datasets. |
+| **Missing Rate Limits** | Leaving auth and public endpoints unprotected, allowing brute-force or scraping attacks. | Add rate limiting by IP for public endpoints and by user ID for authenticated endpoints. |

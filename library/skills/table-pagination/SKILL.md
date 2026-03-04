@@ -222,3 +222,28 @@ export function DataTablePagination({ page, limit, total }: PaginationProps) {
   );
 }
 ```
+
+## Do
+
+- Paginate in the database with `LIMIT`/`OFFSET` — never fetch all rows and slice on the client.
+- Store page, limit, search, and sort in URL query params for shareable, bookmarkable state.
+- Reset to page 1 whenever search or filter criteria change.
+- Use `tabular-nums` on numeric columns and dates for proper alignment.
+- Hide non-essential columns on smaller breakpoints with responsive utility classes.
+
+## Don't
+
+- Don't fetch all data and paginate client-side — it does not scale beyond a few hundred rows.
+- Don't store pagination state in React state — use URL search params for persistence and sharing.
+- Don't forget the total count query — you need it for "Page X of Y" display.
+- Don't fire a search request on every keystroke without debouncing.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Client-side pagination** | Loads all rows into memory, slow on large datasets | Use server-side `LIMIT`/`OFFSET` with a total count query |
+| **Pagination state in `useState`** | State is lost on refresh, URLs are not shareable | Store `page`, `limit`, `search`, `sort` in URL search params |
+| **Not resetting page on filter change** | User sees empty results or wrong page after filtering | Delete the `page` param whenever search or filter params change |
+| **Search without debounce** | Fires a request per keystroke, overwhelming the server | Debounce search input (300ms) before updating the URL param |
+| **Missing total count** | Cannot display "Page X of Y" or disable next button correctly | Run a parallel `COUNT(*)` query alongside the paginated data query |

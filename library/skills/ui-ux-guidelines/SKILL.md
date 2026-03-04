@@ -133,6 +133,47 @@ Comprehensive design guide covering accessibility, interaction, layout, typograp
 - **Truncation**: handle long content gracefully with `line-clamp` + expand.
 - **No results**: show suggestions when search yields nothing — never just "0 results".
 
+## Do
+
+- Meet WCAG 2.1 AA contrast ratios: 4.5:1 for normal text, 3:1 for large text.
+- Make all touch targets at least 44x44px with 8px minimum spacing between them.
+- Use `h-dvh` or `min-h-dvh` instead of `h-screen` for correct mobile viewport behavior.
+- Provide visible `<label>` for every form input — never rely on placeholder text alone.
+- Use `aria-label` on every icon-only button.
+- Show loading indicators (spinner or skeleton) for operations exceeding 300ms.
+- Include one clear call-to-action in every empty state.
+- Reserve `AlertDialog` for destructive or irreversible actions.
+- Use `tabular-nums` for numeric data in tables and dashboards.
+- Respect `prefers-reduced-motion` — disable parallax, auto-play, and scroll-jacking.
+
+## Don't
+
+- Don't convey information by color alone — always add an icon or text label.
+- Don't use `outline-none` without providing an alternative visible focus indicator.
+- Don't rely on hover for primary interactions — mobile users cannot hover.
+- Don't add animation unless explicitly requested by the user or spec.
+- Don't use `linear` easing for UI transitions — use `ease-out` for enters, `ease-in` for exits.
+- Don't animate `width`, `height`, `margin`, or `padding` — use `transform` and `opacity`.
+- Don't use `z-[9999]` — follow a fixed z-index scale (10, 20, 30, 50).
+- Don't show validation errors only on submit — validate on blur for better UX.
+- Don't auto-dismiss toasts for error messages — only auto-dismiss success toasts.
+- Don't use `text-xs` for body text on mobile — minimum `text-base` (16px).
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|-------------|---------|-----|
+| **Color-only status indicators** | Inaccessible for colorblind users | Add icon or text label alongside color |
+| **`h-screen` for full-height layouts** | Broken on mobile (browser chrome overlaps content) | Use `min-h-dvh` or `h-dvh` |
+| **Placeholder as label** | Disappears on focus, fails accessibility audits | Use visible `<label>` above or beside input |
+| **Hover-dependent interactions** | Non-functional on touch devices | Make all interactions work via click/tap |
+| **Silent form failures** | User has no idea what went wrong | Show inline error near the problem field |
+| **Blank empty states** | User is confused, no path forward | Show message + one clear action button |
+| **Animating layout properties** | Jank and repaints, poor performance | Animate only `transform` and `opacity` |
+| **No loading feedback** | UI appears frozen during async operations | Show spinner/skeleton after 300ms threshold |
+| **`z-[9999]` stacking** | Z-index wars, unpredictable layering | Use a fixed scale: `z-10`, `z-20`, `z-30`, `z-50` |
+| **Missing `aria-label` on icon buttons** | Screen readers announce nothing useful | Add descriptive `aria-label` to every icon-only button |
+
 ## Pre-Delivery Checklist
 
 ### Visual Quality

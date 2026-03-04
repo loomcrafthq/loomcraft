@@ -7,6 +7,11 @@ tools:
   - Read
   - Glob
   - Grep
+skills:
+  - code-review
+  - nextjs-conventions
+  - layered-architecture
+  - testing-patterns
 model: inherit
 ---
 

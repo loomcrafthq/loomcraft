@@ -85,3 +85,29 @@ description: "React Native and Expo best practices for navigation, styling, perf
 - Use EAS Submit for app store submissions.
 - Configure `app.json` / `app.config.ts` thoroughly: icons, splash, permissions, version.
 - Test on both iOS and Android — never assume platform parity.
+
+## Do
+
+- Use Expo Go for development and only eject to `expo run:ios/android` when custom native modules are required.
+- Use `FlashList` for large lists instead of `FlatList` for significantly better performance.
+- Use `expo-image` with caching instead of React Native's built-in `Image`.
+- Handle deep linking and universal links from the start of the project.
+- Profile with React DevTools and Xcode Instruments before optimizing.
+
+## Don't
+
+- Don't use class components — use functional components exclusively.
+- Don't use `FlatList` for large datasets — `FlashList` is significantly faster.
+- Don't animate layout properties (width, height, margin) — animate only `transform` and `opacity`.
+- Don't request push notification permission on first launch — ask at a contextual moment.
+- Don't use barrel exports (`index.ts` re-exports) — import directly from source files to reduce bundle size.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Using `FlatList` for large lists** | Poor scroll performance, frame drops, high memory usage | Replace with `FlashList` from `@shopify/flash-list` |
+| **Blocking the JS thread** | UI freezes, animations stutter, app feels unresponsive | Offload heavy computation to native modules or use `useDeferredValue` |
+| **Absolute positioning for layout** | Breaks across screen sizes and platforms | Use flexbox for all layouts; reserve absolute positioning for overlays only |
+| **Push permission on first launch** | Users deny permission reflexively with no context | Request permission at a relevant moment (e.g., after a user action that benefits from notifications) |
+| **Barrel exports everywhere** | Metro bundler includes unused code, increasing bundle size | Import directly from source files: `import { X } from './components/X'` |

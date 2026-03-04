@@ -121,7 +121,7 @@ export async function marketplaceInstallCommand(
     const data = (await res.json()) as InstallResponse;
     const r = data.resource;
 
-    // Save to ~/.loom/library/
+    // Save to ~/.loomcraft/library/
     if (r.type === "agent") {
       saveLocalAgent(r.slug, r.content);
     } else if (r.type === "skill") {
@@ -141,7 +141,7 @@ export async function marketplaceInstallCommand(
     });
 
     console.log(
-      pc.green(`\n  ✓ Installed "${r.title}" (${r.type}) v${r.version} to ~/.loom/library/\n`)
+      pc.green(`\n  ✓ Installed "${r.title}" (${r.type}) v${r.version} to ~/.loomcraft/library/\n`)
     );
     console.log(
       pc.dim(`  Use it: loomcraft add ${r.type} ${r.slug}\n`)

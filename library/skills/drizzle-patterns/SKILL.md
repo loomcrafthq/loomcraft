@@ -164,3 +164,36 @@ export const posts = pgTable("posts", {
 ```
 
 - Use `prepare()` for frequently executed queries.
+
+## Do
+
+- Infer TypeScript types from the schema with `InferSelectModel` / `InferInsertModel` -- never hand-write duplicates.
+- Always pass `limit()` on every query; paginate large collections.
+- Select only the columns you need -- use explicit column lists in `select({})`.
+- Keep transactions short -- insert/update and return, nothing else.
+- Review generated migration SQL before applying it to staging or production.
+- Add composite indexes when queries filter or sort on multiple columns together.
+- Use `.returning()` on insert/update to get the created/updated row back in one round-trip.
+- Co-locate relation definitions next to the table they belong to.
+
+## Don't
+
+- Don't call `select()` with no arguments on tables with many columns -- it fetches everything.
+- Don't nest `db.transaction()` calls -- Drizzle does not support savepoints this way.
+- Don't make HTTP or external API calls inside a transaction block.
+- Don't manually edit files inside the `drizzle/` migrations folder -- regenerate instead.
+- Don't use `drizzle-kit push` in production -- it skips migration history.
+- Don't scatter raw SQL strings across services -- wrap them in DAL functions.
+- Don't forget `.notNull()` on columns that should never be null -- the default is nullable.
+- Don't store enum values as free-text columns when a Drizzle `text({ enum })` or `pgEnum` fits.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Unbounded select** | `db.select().from(users)` with no `limit()` returns the entire table, causing memory spikes. | Always chain `.limit(n)` and implement cursor or offset pagination. |
+| **Fat transactions** | Long-running transactions that call external APIs hold database locks and risk timeouts. | Move external calls outside the transaction; keep only DB operations inside. |
+| **Manual type duplication** | Writing `type User = { id: string; ... }` by hand instead of inferring from the schema. | Use `InferSelectModel<typeof users>` and `InferInsertModel<typeof users>`. |
+| **Editing migration files** | Hand-editing generated SQL causes drift between schema and migration history. | Regenerate migrations with `drizzle-kit generate` after changing the schema. |
+| **Missing indexes** | Queries on non-indexed columns cause full table scans as data grows. | Add `index()` on every column used in `WHERE`, `JOIN`, or `ORDER BY`. |
+| **God DAL file** | One giant `db.dal.ts` mixing queries for every entity. | One file per entity: `user.dal.ts`, `post.dal.ts`, etc. |

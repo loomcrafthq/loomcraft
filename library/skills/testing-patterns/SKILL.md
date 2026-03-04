@@ -201,3 +201,37 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 ```
+
+## Do
+
+- Test every feature from all three role perspectives: PUBLIC, USER, and ADMIN.
+- Use seed factories to create deterministic, isolated test data for each test.
+- Truncate tables in reverse foreign-key order in `afterEach` to prevent test pollution.
+- Test the service layer directly; it is the single source of truth for business logic.
+- Run tests against a real PostgreSQL instance to catch real query and constraint issues.
+- Keep each test case focused on a single behavior; one assertion per logical concern.
+- Use `describe` blocks to group tests by feature or method, and nested `describe` for sub-scenarios.
+- Run the full test suite in CI on every push and pull request before allowing merge.
+
+## Don't
+
+- Don't mock the database; real queries catch constraint violations and type mismatches that mocks hide.
+- Don't share mutable state between tests; always set up fresh data in `beforeEach`.
+- Don't test implementation details like internal function calls; test observable behavior and outputs.
+- Don't rely on test execution order; each test must be independent and idempotent.
+- Don't skip the ADMIN or PUBLIC role tests because "they probably work"; permission bugs are critical.
+- Don't hardcode IDs or timestamps; use factories that generate unique values.
+- Don't write tests that pass when the feature is broken (tautological assertions like `expect(true).toBe(true)`).
+- Don't leave `console.log` debugging in committed test files; use proper assertions.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Database Mocking** | Mocking `db.query` hides real SQL errors, constraint violations, and type mismatches. | Use a real PostgreSQL test database with proper seed data and truncation. |
+| **Shared Mutable Fixtures** | One test modifies a shared object, causing the next test to fail intermittently. | Create fresh data in `beforeEach` using seed factories; truncate in `afterEach`. |
+| **Single-Role Testing** | Only testing the happy path as USER; missing that PUBLIC can access protected resources. | Use the role-based test matrix: always test PUBLIC, USER, and ADMIN for each feature. |
+| **Testing Routes Instead of Services** | Writing integration tests against HTTP routes, which are slow and couple tests to transport details. | Test the service layer directly; only add a thin integration test for route wiring. |
+| **Snapshot Overuse** | Using `toMatchSnapshot()` for dynamic data, causing constant snapshot updates. | Use explicit assertions on specific fields; reserve snapshots for stable UI output. |
+| **Ignoring CI Failures** | Merging PRs with failing tests by re-running CI until it passes. | Fix flaky tests immediately; treat CI red as a blocking issue. |
+| **God Test Files** | Putting hundreds of tests in one file, making it slow to run and hard to navigate. | Split tests by feature or service into separate files under `__tests__/`. |

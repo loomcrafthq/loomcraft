@@ -103,3 +103,29 @@ description: "Chrome extension development patterns for Manifest V3, content scr
 - Enable "Errors" view for debugging service worker issues.
 - Use Chrome DevTools to inspect popup (right-click -> Inspect) and background (service worker link).
 - Hot-reload: rebuild with tsup watch, then click "Update" in `chrome://extensions`.
+
+## Do
+
+- Request minimal permissions — use `activeTab` instead of `<all_urls>` whenever possible.
+- Use `chrome.storage` for all extension data — never `localStorage` in content scripts.
+- Register all event listeners at the top level of the service worker — not inside callbacks.
+- Use `chrome.alarms` for periodic tasks instead of `setInterval`.
+- Define a typed message system for communication between popup, background, and content scripts.
+
+## Don't
+
+- Don't use `innerHTML` with any user-provided or page-scraped content — use `textContent`.
+- Don't include API keys or secrets in content scripts — they are visible to the host page.
+- Don't rely on global state in service workers — they are ephemeral and restart on events.
+- Don't use `localStorage` in content scripts — it accesses the host page's storage, not yours.
+- Don't request broad `host_permissions` — it triggers Chrome Web Store review delays.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Global state in service workers** | State is lost when the service worker goes idle and restarts | Persist state to `chrome.storage.local` and read it on activation |
+| **`setInterval` in background** | Does not work in Manifest V3 service workers; silently fails | Use `chrome.alarms.create()` for periodic background tasks |
+| **`innerHTML` with page content** | XSS vulnerability — injected content can execute arbitrary scripts | Use `textContent` for text or sanitize with a DOM purifier |
+| **Broad `<all_urls>` permission** | Users distrust the extension, Chrome Web Store review is slower | Use `activeTab` or specific `host_permissions` patterns |
+| **Secrets in content scripts** | Host page JS can read content script globals via shared DOM | Keep secrets in the service worker; communicate via `chrome.runtime.sendMessage` |

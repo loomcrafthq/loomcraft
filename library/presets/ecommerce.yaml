@@ -1,0 +1,57 @@
+name: E-Commerce
+description: Online store with Stripe payments, product catalog, SEO, and full agent coverage.
+agents:
+  - orchestrator
+  - brainstormer
+  - planner
+  - frontend
+  - backend
+  - database
+  - ux-ui
+  - marketing
+  - security
+  - performance
+  - tests
+  - review-qa
+  - devops
+skills:
+  - brainstorming
+  - task-planning
+  - code-review
+  - project-bootstrap
+  - stripe-integration
+  - seo-optimization
+  - hero-copywriting
+  - drizzle-patterns
+  - form-validation
+  - testing-patterns
+  - shadcn-ui
+  - api-design
+  - nextjs-conventions
+  - tailwind-patterns
+  - ui-ux-guidelines
+  - env-validation
+  - auth-rbac
+pipeline:
+  - brainstorm
+  - plan
+  - dev
+  - review
+  - test
+constitution:
+  principles:
+    - Trust and conversion — secure payments and frictionless checkout
+    - SEO-driven traffic — optimize every product and category page
+    - Performance matters — fast page loads directly impact revenue
+    - Mobile-first — majority of e-commerce traffic is mobile
+  conventions:
+    - Use Stripe for all payment processing
+    - Implement structured data for products (JSON-LD)
+    - Server Components for product pages, Client Components for cart
+    - Validate all form inputs with Zod schemas
+    - Use optimistic UI for cart operations
+context:
+  projectDescription: >
+    This is an e-commerce application. The orchestrator coordinates product catalog development,
+    payment integration, SEO optimization, and security audits to deliver a fast, trustworthy
+    online store.

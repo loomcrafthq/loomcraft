@@ -3,7 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import type { SkillFile } from "./library.js";
 
-const LIBRARY_DIR = path.join(os.homedir(), ".loom", "library");
+const LIBRARY_DIR = path.join(os.homedir(), ".loomcraft", "library");
 
 function ensureDir(dir: string): void {
   fs.mkdirSync(dir, { recursive: true });

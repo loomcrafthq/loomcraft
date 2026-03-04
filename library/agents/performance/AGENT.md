@@ -2,13 +2,16 @@
 name: Performance
 description: Audits and optimizes application performance, bundle size, and runtime efficiency
 role: performance
-color: "#8B5CF6"
+color: "#FACC15"
 tools:
   - Bash(npm run *, npx lighthouse *, npx next-bundle-analyzer *)
   - Read
   - Edit
   - Glob
   - Grep
+skills:
+  - nextjs-conventions
+  - tailwind-patterns
 model: inherit
 ---
 

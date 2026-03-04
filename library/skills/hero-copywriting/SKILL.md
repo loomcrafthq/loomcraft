@@ -70,3 +70,29 @@ description: "Guidelines for writing high-converting hero sections with headline
 [Primary CTA button]  [Secondary CTA — optional]
 [Social proof — logos, metric, or testimonial]
 ```
+
+## Do
+
+- Lead with the outcome the user gets, not the technology behind it.
+- Include a specific number or metric in the headline for credibility ("Save 5 hours a week").
+- Use action verbs on the primary CTA: "Start", "Get", "Try", "Launch", "Build".
+- Place social proof immediately below or beside the CTA for maximum trust.
+- Keep the hero visually spacious — generous whitespace and a max content width.
+
+## Don't
+
+- Don't write headlines longer than 12 words — they lose impact.
+- Don't use vague CTAs like "Submit" or "Sign up" — be specific about what the user gets.
+- Don't skip social proof — even a single metric or testimonial increases conversion.
+- Don't use corporate jargon or buzzwords — write conversationally and directly.
+- Don't crowd the hero with multiple competing messages — one headline, one CTA, one proof element.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Feature-first headline** | Users don't understand the benefit ("AI-powered platform") | Lead with the outcome: "Ship 3x faster with your AI co-pilot" |
+| **Generic CTA ("Sign up")** | Low conversion, does not communicate value | Use specific CTAs: "Start your free trial" or "Get started in 30 seconds" |
+| **No social proof** | Visitors lack trust, bounce rate increases | Add at least one proof element: logos, user count, rating, or testimonial |
+| **Wall of text in hero** | Visitors skim and leave without understanding the value | Keep headline under 12 words, subheadline under 25 words |
+| **Multiple CTAs competing** | Decision paralysis, lower click-through rate | One prominent primary CTA, one optional secondary CTA in outline style |

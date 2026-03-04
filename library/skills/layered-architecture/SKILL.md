@@ -129,3 +129,35 @@ src/
 
 - All new files use **kebab-case**.
 - One file per entity per layer — avoid catch-all files.
+
+## Do
+
+- Call only the layer directly below -- Presentation calls Facade, Facade calls Service, Service calls DAL.
+- Pass the auth context (current user) as a parameter from Facade to Service -- never fetch it inside a service.
+- Keep facades thin -- they orchestrate calls and shape data for the UI, nothing more.
+- Put all authorization checks (CASL) in the Service layer.
+- Put all data shaping (column selection, joins, pagination) in the DAL layer.
+- Create one file per entity per layer: `user.facade.ts`, `user.service.ts`, `user.dal.ts`.
+- Use functional style -- pure functions, no classes, prefer composition.
+- Extract sub-functions when any function exceeds ~100 lines.
+
+## Don't
+
+- Don't call a DAL function directly from a component or page -- always go through Facade then Service.
+- Don't put business rules or authorization in the Facade layer -- that belongs in Service.
+- Don't put auth checks or business logic in the DAL -- it is purely data access.
+- Don't import Drizzle `db` in service or facade files -- only DAL and `lib/db.ts` touch the database.
+- Don't create catch-all files like `api.service.ts` that mix multiple entities.
+- Don't let the persistence layer (schema files) contain query logic.
+- Don't pass raw Drizzle query results up through the layers -- shape them in the DAL.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Layer skipping** | A component imports a service or DAL function directly, bypassing the facade. | Always route through Facade -- it ensures auth context is attached and coordination is centralized. |
+| **Fat facade** | Facade contains business rules, conditionals, or authorization logic. | Move business logic to the Service layer; the Facade only orchestrates and transforms. |
+| **Auth in DAL** | DAL functions check user permissions before running queries. | Remove auth from DAL; let the Service layer handle all authorization with CASL. |
+| **Database in Service** | Service imports `db` and runs queries directly instead of calling DAL functions. | Extract every query into the DAL; the Service layer never touches Drizzle directly. |
+| **God file** | A single `data.ts` or `api.ts` that handles users, posts, and orgs in one file. | Split into one file per entity per layer: `user.dal.ts`, `post.dal.ts`, etc. |
+| **Upward dependency** | A DAL file imports from a service or facade, creating a circular dependency. | Dependencies flow strictly downward: Presentation > Facade > Service > DAL > Persistence. |

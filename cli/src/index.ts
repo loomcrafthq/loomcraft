@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { listCommand } from "./commands/list.js";
 import { addCommand } from "./commands/add.js";
 import { initCommand } from "./commands/init.js";
+import { syncCommand } from "./commands/sync.js";
 import {
   marketplaceSearchCommand,
   marketplaceInstallCommand,
@@ -17,8 +18,8 @@ const { version } = require("../package.json");
 const program = new Command();
 
 program
-  .name("loom")
-  .description("Integrate Loom library (agents, skills, presets) into your project")
+  .name("loomcraft")
+  .description("Integrate Loomcraft library (agents, skills, presets) into your project")
   .version(version);
 
 program
@@ -88,6 +89,20 @@ program
       target,
       targetExplicit,
     });
+  });
+
+program
+  .command("sync")
+  .description("Regenerate the orchestrator based on currently installed agents and skills")
+  .option("--target <name>", `Output target: ${[...listTargetNames(), "custom"].join(", ")}`, DEFAULT_TARGET)
+  .option("--target-dir <dir>", "Custom target directory")
+  .option("--context-file <file>", "Custom context file name")
+  .action(async (opts: Record<string, string>) => {
+    const savedConfig = loadConfig();
+    const target = opts.target !== DEFAULT_TARGET || opts.targetDir || opts.contextFile
+      ? resolveTarget(opts.target, opts.targetDir, opts.contextFile)
+      : savedConfig ?? BUILTIN_TARGETS[DEFAULT_TARGET];
+    await syncCommand(target);
   });
 
 const mp = program

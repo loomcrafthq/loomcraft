@@ -3,16 +3,16 @@ import path from "node:path";
 import type { TargetConfig } from "./target.js";
 import { resolveTarget } from "./target.js";
 
-const CONFIG_FILE = "loom.config.json";
+const CONFIG_FILE = "loomcraft.config.json";
 
-interface LoomConfig {
+interface LoomcraftConfig {
   target: string;
   targetDir: string;
   contextFile: string;
 }
 
 export function saveConfig(target: TargetConfig, cwd = process.cwd()): void {
-  const config: LoomConfig = {
+  const config: LoomcraftConfig = {
     target: target.name,
     targetDir: target.dir,
     contextFile: target.contextFile,
@@ -26,7 +26,7 @@ export function loadConfig(cwd = process.cwd()): TargetConfig | null {
   if (!fs.existsSync(filePath)) return null;
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    const config = JSON.parse(raw) as LoomConfig;
+    const config = JSON.parse(raw) as LoomcraftConfig;
     return resolveTarget(config.target, config.targetDir, config.contextFile);
   } catch {
     return null;

@@ -145,3 +145,29 @@ src/
 - Test output by capturing stdout/stderr.
 - Test error cases: missing args, invalid flags, missing config.
 - Test stdin piping with mock readable streams.
+
+## Do
+
+- Use `stdout` for data output and `stderr` for logs, progress, and errors.
+- Exit with proper codes: `0` for success, `1` for runtime errors, `2` for usage errors.
+- Provide `--json` flag for machine-readable output on data commands.
+- Confirm destructive actions with a prompt before executing.
+- Validate config files with Zod and fail fast with clear error messages.
+
+## Don't
+
+- Don't show raw stack traces to users — gate them behind `--verbose`.
+- Don't ignore `NO_COLOR` — always check `process.env.NO_COLOR` before styling output.
+- Don't mix data output and logging on the same stream — use `stdout` for data, `stderr` for logs.
+- Don't use `process.exit()` without cleanup — close open handles and flush output first.
+- Don't forget to include `--help` descriptions for all arguments and options.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Raw stack traces on error** | Confuses non-technical users, exposes internals | Show a human-readable message; log stack traces only with `--verbose` |
+| **Mixing stdout and stderr** | Breaks piping (`mytool | jq`) because logs pollute data output | Write data to `stdout` and all logs/progress to `stderr` |
+| **No confirmation on destructive actions** | Users accidentally delete data or overwrite files | Prompt with `confirm()` before irreversible operations |
+| **Ignoring `NO_COLOR`** | Output is unreadable in CI environments or non-TTY terminals | Check `process.env.NO_COLOR` and `process.stdout.isTTY` before using colors |
+| **Monolithic single-file CLI** | Hard to maintain, test, and extend as commands grow | One file per subcommand in a `commands/` directory, registered with `program.addCommand()` |

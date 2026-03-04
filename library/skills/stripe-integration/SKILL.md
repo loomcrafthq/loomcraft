@@ -94,3 +94,29 @@ description: "Stripe payment integration patterns for checkout, subscriptions, w
   stripe listen --forward-to localhost:3000/api/webhooks/stripe
   ```
 - Test all webhook event types, especially failure scenarios.
+
+## Do
+
+- Use `metadata` on every Checkout Session to link back to your database records (`userId`, `orderId`).
+- Make all webhook handlers idempotent — store processed event IDs to handle redelivery.
+- Use Stripe Customer Portal for subscription management instead of building custom UI.
+- Validate amounts and currencies server-side before creating any charge or session.
+- Return 200 from webhooks quickly and process heavy logic asynchronously.
+
+## Don't
+
+- Don't collect card details directly — always use Stripe Checkout or Payment Elements.
+- Don't trust webhook payloads without verifying the `stripe-signature` header.
+- Don't expose `STRIPE_SECRET_KEY` to the client — use the publishable key only.
+- Don't use product IDs when creating Checkout Sessions — use price IDs instead.
+- Don't fulfill orders on the client-side redirect — wait for the `checkout.session.completed` webhook.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Fulfilling on success URL redirect** | User can hit success URL without paying; redirect is not payment confirmation | Fulfill orders in the `checkout.session.completed` webhook handler |
+| **No idempotency in webhooks** | Duplicate events cause double fulfillment or duplicate charges | Store processed event IDs and skip duplicates |
+| **Hardcoding price IDs** | Breaks across test/live modes, hard to update pricing | Store price IDs in env vars or fetch from Stripe at startup |
+| **Skipping webhook signature verification** | Attackers can forge events and trigger unauthorized fulfillment | Always call `stripe.webhooks.constructEvent()` with the signing secret |
+| **Logging raw card numbers** | PCI compliance violation, security breach risk | Never log card details; rely on Stripe's PCI-compliant elements |

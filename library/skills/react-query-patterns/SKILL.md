@@ -191,3 +191,28 @@ export default async function UsersPage() {
   );
 }
 ```
+
+## Do
+
+- Use the query key factory pattern (`queryKeys.users.detail(id)`) for consistent, structured keys.
+- Wrap `useQuery`/`useMutation` in custom domain hooks (`useUsers`, `useCreateUser`) for reuse.
+- Invalidate related queries after every mutation using `queryClient.invalidateQueries()`.
+- Prefetch data in Server Components with `HydrationBoundary` for instant page loads.
+- Use optimistic updates for user-facing edits and deletes where latency matters.
+
+## Don't
+
+- Don't fetch data in `useEffect` — use `useQuery` with a `queryFn` instead.
+- Don't use inline string arrays as query keys — use the factory pattern from `query-keys.ts`.
+- Don't forget to invalidate queries after mutations — stale UI is a common bug.
+- Don't create a new `QueryClient` on every render — use `useState` to create it once.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Fetching in `useEffect`** | No caching, no deduplication, manual loading/error state management | Use `useQuery` which handles caching, dedup, loading, and errors automatically |
+| **Inline query keys (`["users", id]`)** | Typos cause cache misses, no autocomplete, hard to invalidate | Use the `queryKeys` factory pattern for structured, type-safe keys |
+| **Not invalidating after mutation** | UI shows stale data after create/update/delete | Call `queryClient.invalidateQueries()` in the mutation's `onSuccess` callback |
+| **New `QueryClient()` in render** | Client is recreated every render, wiping the cache | Create `QueryClient` inside `useState(() => new QueryClient(...))` |
+| **Optimistic update without rollback** | Failed mutation leaves UI in an incorrect state | Always implement `onError` rollback using the `context.previous` pattern |

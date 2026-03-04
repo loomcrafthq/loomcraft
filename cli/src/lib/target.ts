@@ -17,7 +17,7 @@ export const BUILTIN_TARGETS: Record<string, TargetConfig> = {
     dir: ".claude",
     agentsSubdir: "agents",
     skillsSubdir: "skills",
-    orchestratorFile: "orchestrator.md",
+    orchestratorFile: "agents/orchestrator/AGENT.md",
     contextFile: "CLAUDE.md",
   },
   cursor: {
@@ -26,7 +26,7 @@ export const BUILTIN_TARGETS: Record<string, TargetConfig> = {
     dir: ".cursor",
     agentsSubdir: "agents",
     skillsSubdir: "skills",
-    orchestratorFile: "orchestrator.md",
+    orchestratorFile: "agents/orchestrator/AGENT.md",
     contextFile: ".cursorrules",
   },
 };

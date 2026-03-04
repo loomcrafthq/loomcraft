@@ -61,7 +61,7 @@ export async function listCommand(type?: string): Promise<void> {
       }
     }
 
-    // Local library section (~/.loom/library/)
+    // Local library section (~/.loomcraft/library/)
     const localItems = listLocalResources().filter(
       (item) => !bundledSlugs.has(`${item.type}:${item.slug}`)
     );

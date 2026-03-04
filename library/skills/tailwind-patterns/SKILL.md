@@ -67,3 +67,38 @@ description: "Tailwind CSS utility conventions, responsive design, and component
 - Forms: stack fields with `space-y-4`, use `grid gap-4 md:grid-cols-2` for side-by-side fields.
 - Buttons: use ShadCN `Button` with appropriate `variant` and `size`.
 - Badges: use ShadCN `Badge` with `variant="secondary"` for tags, `variant="outline"` for less emphasis.
+
+## Do
+
+- Use `cn()` for every conditional or merged class — keep logic readable.
+- Apply responsive prefixes in ascending order: base, `sm:`, `md:`, `lg:`, `xl:`.
+- Use semantic color tokens (`bg-primary`, `text-muted-foreground`) for theme compatibility.
+- Stick to the spacing scale (`gap-2`, `gap-4`, `gap-6`, `gap-8`) — avoid arbitrary values.
+- Use `flex` and `grid` for all layout — they cover virtually every case.
+- Add `transition-colors` to interactive elements for smooth hover/focus feedback.
+- Use `truncate` or `line-clamp-*` to prevent text overflow in constrained layouts.
+- Test responsive designs at 375px, 768px, 1024px, and 1440px.
+
+## Don't
+
+- Don't use `@apply` in component files — keep utilities in JSX.
+- Don't hardcode hex or RGB colors — always use design system tokens.
+- Don't use `h-screen` — use `h-dvh` or `min-h-dvh` for correct mobile viewport.
+- Don't skip mobile-first — never write desktop styles as the base.
+- Don't use arbitrary values (`w-[347px]`) when a scale value (`w-full`, `max-w-sm`) works.
+- Don't nest Tailwind classes inside ternaries without `cn()` — it causes merge conflicts.
+- Don't use `absolute` positioning for layout — reserve it for overlays and decorations.
+- Don't add `!important` via `!` prefix — fix specificity issues at the source.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|-------------|---------|-----|
+| **`@apply` everywhere** | Defeats utility-first approach, hides styles from JSX | Use utility classes directly in JSX |
+| **Hardcoded hex colors** | Breaks theming and dark mode | Use semantic tokens: `bg-primary`, `text-foreground` |
+| **Desktop-first breakpoints** | Styles break on mobile, requires overrides | Write base styles for mobile, add `sm:`, `md:`, `lg:` |
+| **`className={condition ? "a b c" : "a b d"}`** | Duplicated classes, hard to maintain | Use `cn("a b", condition ? "c" : "d")` |
+| **`z-[9999]`** | Z-index wars, unpredictable stacking | Use a fixed scale: `z-10`, `z-20`, `z-30`, `z-50` |
+| **`w-[calc(100%-32px)]`** | Fragile, breaks at other sizes | Use `w-full px-4` or proper flex/grid layout |
+| **Missing responsive classes** | UI breaks on smaller screens | Always test and add `sm:`, `md:` variants as needed |
+| **`style={{ }}` inline styles** | Bypasses Tailwind, inconsistent with system | Use Tailwind utilities or CSS variables |

@@ -9,8 +9,11 @@ tools:
   - Write
   - Edit
 skills:
-  - supabase-patterns
   - drizzle-patterns
+  - prisma-patterns
+  - supabase-patterns
+  - layered-architecture
+  - env-validation
 model: inherit
 ---
 

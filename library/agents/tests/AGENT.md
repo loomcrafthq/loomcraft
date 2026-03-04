@@ -12,6 +12,7 @@ tools:
   - Grep
 skills:
   - testing-patterns
+  - tdd-workflow
 model: inherit
 ---
 

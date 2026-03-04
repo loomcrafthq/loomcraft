@@ -140,3 +140,28 @@ ZodError: [
   { path: ["RESEND_API_KEY"], message: "Invalid" }
 ]
 ```
+
+## Do
+
+- Validate env vars at startup by importing `@/env` in the root layout.
+- Use Zod refinements like `.startsWith("sk_")` to catch wrong-environment keys early.
+- Maintain `.env.example` with every required variable (no values) so new developers can onboard.
+- Separate client and server schemas — export `clientEnv` for safe browser access.
+- Use `z.coerce.number()` for numeric env vars like ports.
+
+## Don't
+
+- Don't access `process.env` directly anywhere outside `src/env.ts`.
+- Don't commit `.env.local` or `.env.production` — keep them gitignored.
+- Don't use non-null assertions (`process.env.KEY!`) — this defeats the purpose of validation.
+- Don't put server secrets in `NEXT_PUBLIC_` variables — they are shipped to the browser.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Scattered `process.env` access** | No validation, no types, easy to misspell variable names | Centralize all access through `src/env.ts` with Zod validation |
+| **Using `!` assertions on env vars** | App crashes at runtime with unhelpful "undefined" errors | Validate at startup with Zod; the import itself ensures correctness |
+| **Missing `.env.example`** | New developers don't know which variables are required | Maintain `.env.example` with all keys and no values |
+| **Server secrets in `NEXT_PUBLIC_`** | Secrets are bundled into client JS and visible in the browser | Keep server-only vars without the `NEXT_PUBLIC_` prefix; use separate schemas |
+| **No prefix validation** | Wrong-environment keys (test key in production) go unnoticed | Use `.startsWith()` refinements for keys with known prefixes |

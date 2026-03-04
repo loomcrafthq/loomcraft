@@ -179,3 +179,28 @@ export async function POST(request: Request) {
   return NextResponse.json({ received: true });
 }
 ```
+
+## Do
+
+- Send emails from a dedicated service layer (`email.service.ts`), never from routes or components.
+- Use React Email components for type-safe, previewable templates.
+- Support i18n in every email by passing `locale` and using the email-i18n helper.
+- Use inline styles exclusively — CSS classes are stripped by most email clients.
+- Handle bounce and complaint webhooks to maintain sender reputation.
+
+## Don't
+
+- Don't send emails directly from API routes or Server Actions — route through the service layer.
+- Don't use CSS classes or external stylesheets in email templates — use inline `style` props.
+- Don't hardcode the "from" address in multiple places — define it once as a constant.
+- Don't ignore bounce/complaint webhooks — unprocessed bounces degrade deliverability.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Sending emails in route handlers** | Scattered send logic, hard to test, no reuse | Centralize all email sending in `email.service.ts` |
+| **Using CSS classes in email templates** | Styles are stripped by Gmail, Outlook, and most clients | Use inline `style` props on every element |
+| **No locale support in emails** | Users receive emails in the wrong language | Pass `locale` to every email function, use `getEmailTranslations()` |
+| **Ignoring delivery webhooks** | Bounced addresses keep receiving sends, harming sender reputation | Process `email.bounced` and `email.complained` events to disable future sends |
+| **Hardcoding strings in email templates** | Cannot translate or update copy without code changes | Use the email-i18n translation system with message files |

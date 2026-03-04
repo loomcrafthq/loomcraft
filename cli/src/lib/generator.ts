@@ -70,14 +70,14 @@ export function generateContextFile(
   lines.push("```");
   lines.push("");
 
-  // Agents — loom-managed section
-  lines.push("<!-- loom:agents:start -->");
+  // Agents — loomcraft-managed section
+  lines.push("<!-- loomcraft:agents:start -->");
   lines.push("## Agents");
   lines.push("");
 
   const nonOrchestrator = agents.filter((a) => a.slug !== "orchestrator");
   if (nonOrchestrator.length > 0) {
-    lines.push(`This project uses ${nonOrchestrator.length} specialized agents coordinated by an orchestrator (\`${target.dir}/${target.orchestratorFile}\`).`);
+    lines.push(`This project uses ${nonOrchestrator.length + 1} agents (including the orchestrator) in \`${target.dir}/${target.agentsSubdir}/\`. The orchestrator (\`${target.dir}/${target.orchestratorFile}\`) coordinates the development pipeline.`);
     lines.push("");
     lines.push("| Agent | Role | Description |");
     lines.push("|-------|------|-------------|");
@@ -86,12 +86,12 @@ export function generateContextFile(
     }
     lines.push("");
   }
-  lines.push("<!-- loom:agents:end -->");
+  lines.push("<!-- loomcraft:agents:end -->");
   lines.push("");
 
-  // Skills — loom-managed section
+  // Skills — loomcraft-managed section
   if (skillSlugs.length > 0) {
-    lines.push("<!-- loom:skills:start -->");
+    lines.push("<!-- loomcraft:skills:start -->");
     lines.push("## Skills");
     lines.push("");
     lines.push("Installed skills providing domain-specific conventions and patterns:");
@@ -100,14 +100,16 @@ export function generateContextFile(
       lines.push(`- \`${slug}\``);
     }
     lines.push("");
-    lines.push("<!-- loom:skills:end -->");
+    lines.push("<!-- loomcraft:skills:end -->");
     lines.push("");
   }
 
   // Orchestrator usage
   lines.push("## How to use");
   lines.push("");
-  lines.push(`The orchestrator agent (\`${target.dir}/${target.orchestratorFile}\`) is the main entry point. It analyzes tasks, breaks them into subtasks, and delegates to the appropriate specialized agents. Each agent has access to its assigned skills for domain-specific guidance.`);
+  lines.push(`For any task, invoke the **orchestrator** agent. It runs a pipeline (brainstorm → plan → dev → review → test) and delegates to the appropriate specialized agents. Each agent has access to its assigned skills for domain-specific guidance.`);
+  lines.push("");
+  lines.push(`All agents are in \`${target.dir}/${target.agentsSubdir}/\` and skills in \`${target.dir}/${target.skillsSubdir}/\`.`);
   lines.push("");
 
   return lines.join("\n");
@@ -139,8 +141,8 @@ export function generateOrchestrator(
     rules.push(line);
   }
 
-  // Rebuild frontmatter with delegates-to
-  const newFrontmatter = { ...frontmatter, "delegates-to": delegatesTo };
+  // Rebuild frontmatter (keep original fields only — delegates-to is not a recognized field)
+  const newFrontmatter = { ...frontmatter };
 
   // Replace placeholder in content
   const newContent = content.replace("{{DELEGATION_RULES}}", rules.join("\n"));

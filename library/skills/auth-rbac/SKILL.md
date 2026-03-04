@@ -177,3 +177,28 @@ export async function withOrgRole(orgId: string, requiredRole: OrgRole) {
   return { user, membership };
 }
 ```
+
+## Do
+
+- Define all abilities in a single `casl.ts` file for discoverability.
+- Check permissions in the service layer — not in routes, components, or the data access layer.
+- Use route groups (`(public)`, `(auth)`, `(app)`, `admin`) to organize access levels structurally.
+- Combine app role and org role checks when accessing organization resources.
+- Use `ForbiddenError.from(ability).throwUnlessCan()` for consistent error handling.
+
+## Don't
+
+- Don't check roles in client components as a security measure — always verify server-side.
+- Don't scatter permission checks across routes and API handlers — centralize in services.
+- Don't use string comparisons for roles (`if (role === "admin")`) — use CASL abilities instead.
+- Don't grant `manage("all")` to non-super-admin roles — follow least privilege.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Client-side role gating as security** | Users can bypass by modifying client code | Use client checks for UX only; enforce permissions server-side with CASL |
+| **Checking roles in API route handlers** | Scattered logic, inconsistent enforcement | Move authorization to the service layer with `defineAbilityFor()` |
+| **Flat role strings without hierarchy** | Adding new roles requires updating every check | Use CASL ability builder with role inheritance |
+| **Missing org role check on org resources** | Users from one org can access another org's data | Always verify both app role and org membership before accessing org resources |
+| **Hardcoding admin emails** | Fragile, doesn't scale, easy to forget updates | Use role column in the database and manage through admin UI |

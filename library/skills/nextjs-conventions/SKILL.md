@@ -101,3 +101,38 @@ src/app/
 - **Top-down design** — if a function or component exceeds ~100 lines, extract sub-functions or sub-components.
 - Prefer named exports over default exports (except for page/layout components).
 - Group imports: React/Next.js first, then external libs, then internal modules.
+
+## Do
+
+- Keep Server Components as the default; push `"use client"` to the smallest leaf component that needs interactivity.
+- Colocate `loading.tsx`, `error.tsx`, and `not-found.tsx` at every route segment that fetches data.
+- Use `revalidatePath()` or `revalidateTag()` after every Server Action mutation to keep caches fresh.
+- Wrap slow async data in `<Suspense>` boundaries so the rest of the page streams immediately.
+- Prefer `next/image`, `next/link`, and `next/font` over raw HTML equivalents for automatic optimization.
+- Use `satisfies` on config objects and route params to get type checking without widening.
+- Place shared types in `src/types/` and shared utils in `src/lib/` to avoid circular imports.
+- Validate environment variables at build time with `zod` in a single `src/env.ts` file.
+
+## Don't
+
+- Don't add `"use client"` to a file just because a child component needs it; pass server data as props instead.
+- Don't fetch data in Client Components when it can be done in a parent Server Component.
+- Don't use `useEffect` for data fetching; rely on Server Components or Server Actions.
+- Don't import server-only code (`db`, `fs`, secrets) in any file that has `"use client"`.
+- Don't nest route groups more than two levels deep; it makes the URL structure hard to reason about.
+- Don't use `<a>` tags for internal navigation; always use `next/link`.
+- Don't use CSS modules or `styled-components` alongside Tailwind; pick one system.
+- Don't skip `alt` text on `next/image`; it is required for accessibility and build will warn.
+- Don't use `any`; use `unknown` and narrow with type guards.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **God Client Component** | Marking an entire page `"use client"` to use one `onClick` handler, losing all RSC benefits. | Extract only the interactive piece into a small Client Component; keep the page as RSC. |
+| **useEffect Data Fetching** | Fetching data in `useEffect` causes waterfalls, loading flicker, and duplicates server work. | Fetch in a Server Component with `async/await` and pass data as props. |
+| **Prop Drilling Contexts** | Creating a React Context just to pass server data through three levels. | Pass props directly or restructure with composition (`children` pattern). |
+| **Wildcard Revalidation** | Calling `revalidatePath("/")` after every mutation, busting the entire cache. | Use `revalidatePath("/specific/path")` or `revalidateTag("tag")` for surgical invalidation. |
+| **Barrel Files** | Re-exporting everything from `index.ts` barrels, which breaks tree-shaking and slows builds. | Import directly from the source file: `@/components/button` not `@/components`. |
+| **Mixing Routers** | Using Pages Router (`pages/`) alongside App Router (`app/`), causing confusing routing conflicts. | Use App Router exclusively; migrate any remaining Pages Router routes. |
+| **Raw `<img>` Tags** | Using `<img>` instead of `next/image`, missing automatic optimization, lazy loading, and sizing. | Replace with `<Image>` from `next/image` and provide `width`, `height`, and `alt`. |

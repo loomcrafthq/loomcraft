@@ -210,3 +210,28 @@ await authClient.organization.inviteMember({
 // Switch active organization
 await authClient.organization.setActive({ organizationId: org.id });
 ```
+
+## Do
+
+- Use `getCurrentUser()` in Server Components and Server Actions for session checks.
+- Keep auth client and server modules in separate files (`auth-client.ts` vs `auth.ts`).
+- Configure session refresh (`updateAge`) to avoid unnecessary database lookups.
+- Use the organization plugin for multi-tenant features instead of building custom logic.
+- Always redirect unauthenticated users from middleware, not from page components.
+
+## Don't
+
+- Don't call `useSession()` in Server Components — it is a client-only hook.
+- Don't store `BETTER_AUTH_SECRET` in `NEXT_PUBLIC_` variables or expose it to the browser.
+- Don't skip the middleware and rely solely on page-level auth checks — middleware catches unauthenticated requests earlier.
+- Don't create custom session tables — use Better Auth's built-in schema and plugins.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Checking auth in every page** | Duplicated logic, easy to forget on new pages | Use middleware for route protection and `requireAuth()` in server components |
+| **Using `process.env.BETTER_AUTH_SECRET` on the client** | Exposes secret, compromises all sessions | Keep secret server-only; use `auth-client.ts` for client code |
+| **Fetching session in `useEffect`** | Causes flash of unauthenticated content, race conditions | Use `useSession()` hook which manages loading state automatically |
+| **Hardcoding social provider config** | Breaks when credentials rotate or new providers are added | Store client IDs/secrets in env vars, validate with Zod at startup |
+| **Not setting `expiresIn` and `updateAge`** | Sessions never expire or refresh too often | Configure both values explicitly in the `session` config |

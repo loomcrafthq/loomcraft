@@ -11,17 +11,18 @@ tools:
   - Glob
   - Grep
 skills:
-  - supabase-patterns
   - api-design
-  - nextjs-conventions
-  - layered-architecture
   - server-actions-patterns
+  - layered-architecture
   - drizzle-patterns
-  - auth-rbac
-  - i18n-patterns
+  - prisma-patterns
+  - better-auth-patterns
+  - supabase-patterns
   - env-validation
   - resend-email
-  - better-auth-patterns
+  - auth-rbac
+  - i18n-patterns
+  - nextjs-conventions
 model: inherit
 ---
 

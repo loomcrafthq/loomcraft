@@ -104,3 +104,29 @@ description: "SEO best practices for structured data, meta tags, Core Web Vitals
 - Use `hreflang` tags for multi-language sites.
 - Use `lang` attribute on `<html>` element.
 - Create dedicated URLs per language: `/en/about`, `/fr/about`.
+
+## Do
+
+- Write unique `title` and `description` for every page — never duplicate across routes.
+- Use `generateMetadata()` for dynamic routes to produce page-specific meta tags.
+- Add JSON-LD structured data for rich search results on product, article, and FAQ pages.
+- Optimize images with `next/image` using modern formats (WebP/AVIF) and proper sizing.
+- Generate `sitemap.xml` and `robots.txt` dynamically for every public site.
+
+## Don't
+
+- Don't use more than one `<h1>` per page — maintain proper heading hierarchy.
+- Don't use generic anchor text like "click here" — use descriptive link text.
+- Don't keyword-stuff `alt` text on images — keep it descriptive and natural.
+- Don't serve duplicate content without canonical URLs — search engines penalize this.
+- Don't ignore Core Web Vitals — poor LCP, INP, or CLS directly affects rankings.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Duplicate titles across pages** | Search engines cannot differentiate pages, rankings suffer | Write unique `title` and `description` per page using `generateMetadata()` |
+| **Missing structured data** | Pages are ineligible for rich snippets in search results | Add JSON-LD with the appropriate schema type (`Product`, `Article`, `FAQPage`) |
+| **No sitemap or robots.txt** | Search engines cannot discover or index pages efficiently | Generate both dynamically using Next.js metadata route conventions |
+| **Unoptimized images** | Slow LCP, poor Core Web Vitals scores | Use `next/image` with proper `width`/`height`, modern formats, and lazy loading |
+| **Soft 404s instead of redirects** | Dead pages accumulate, wasting crawl budget | Use 301 redirects for moved content and proper 404 responses for deleted pages |

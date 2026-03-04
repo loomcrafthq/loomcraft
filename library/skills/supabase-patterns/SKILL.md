@@ -102,6 +102,45 @@ description: "Supabase patterns for auth, database, RLS, storage, and real-time.
   ```
 - Get public URL: `supabase.storage.from("avatars").getPublicUrl(path)`.
 
+## Do
+
+- Enable RLS on every table immediately after creation — no exceptions.
+- Validate sessions server-side with `getUser()` in middleware and Server Actions.
+- Use `@supabase/ssr` for all Next.js Supabase integration.
+- Handle `error` on every Supabase query — log it, throw it, or show it to the user.
+- Add `LIMIT` to every query — protect against unbounded result sets.
+- Use `.single()` for queries expecting exactly one row, `.maybeSingle()` when it might not exist.
+- Use separate Supabase clients for client components (`createClient`) and server components (`createServerClient`).
+- Set RLS policies on storage buckets — treat them like tables.
+- Use `gen_random_uuid()` for primary keys and add `created_at`/`updated_at` to every table.
+- Clean up Realtime subscriptions on component unmount.
+
+## Don't
+
+- Don't skip RLS on "internal" or "admin" tables — attackers find them too.
+- Don't trust `getSession()` alone — it reads from cookies and can be spoofed; always use `getUser()`.
+- Don't use `@supabase/auth-helpers-nextjs` — it is deprecated; use `@supabase/ssr`.
+- Don't ignore the `error` return — silent failures hide bugs and security issues.
+- Don't use `select('*')` on large tables — select only the columns you need.
+- Don't use `security definer` functions unless absolutely necessary — prefer RLS policies.
+- Don't subscribe to Realtime for data that changes infrequently — use polling or revalidation.
+- Don't connect directly to the database at scale — use Supavisor connection pooling.
+- Don't store user profile data in `auth.users` metadata — use a separate `profiles` table.
+- Don't create signed URLs with long expiration times for private files.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|-------------|---------|-----|
+| **RLS disabled on table** | Any authenticated user can read/write all rows | Enable RLS and add policies referencing `auth.uid()` |
+| **Client-side `getSession()` only** | Session can be spoofed from cookies | Always validate with `getUser()` server-side |
+| **`select('*')` without LIMIT** | Fetches entire table, causes timeouts and high bandwidth | Use `select('col1, col2').limit(20)` |
+| **Ignoring `error` return** | Bugs silently pass, data inconsistencies go unnoticed | Check `if (error)` and throw or handle on every query |
+| **Realtime for everything** | Unnecessary WebSocket connections, wasted resources | Use Realtime only for chat, notifications, collaboration |
+| **No `updated_at` trigger** | `updated_at` column never updates, stale timestamps | Add `moddatetime` trigger on every table |
+| **Direct DB connection at scale** | Connection exhaustion under load | Use Supavisor connection pooling in production |
+| **`security definer` overuse** | Bypasses RLS, creates hidden privilege escalation | Use RLS policies; reserve `security definer` for rare edge cases |
+
 ## Performance
 
 - Use connection pooling (Supavisor) in production — never connect directly at scale.

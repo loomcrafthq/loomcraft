@@ -1,18 +1,31 @@
-name: Landing Page
-description: Site vitrine / marketing avec focus SEO, conversion, animations et responsive design.
+name: Landing
+description: Marketing landing page with SEO, conversion optimization, and perfect Lighthouse scores.
 agents:
   - orchestrator
+  - brainstormer
+  - planner
   - frontend
   - ux-ui
   - marketing
   - performance
   - review-qa
 skills:
+  - brainstorming
+  - task-planning
+  - code-review
+  - project-bootstrap
   - nextjs-conventions
   - tailwind-patterns
+  - shadcn-ui
   - hero-copywriting
   - seo-optimization
   - ui-ux-guidelines
+pipeline:
+  - brainstorm
+  - plan
+  - dev
+  - review
+  - test
 constitution:
   principles:
     - Conversion-first — every section must guide visitors toward a clear CTA
@@ -27,6 +40,6 @@ constitution:
     - Ensure all interactive elements have visible focus states
 context:
   projectDescription: >
-    This is a landing page / marketing site. It focuses on SEO, conversion
-    optimization, and fast loading. The orchestrator delegates visual tasks to the frontend and
-    ux-ui agents, copywriting to marketing, and performance audits to the performance agent.
+    This is a landing page / marketing site. The orchestrator coordinates brainstorming for messaging,
+    planning content structure, frontend development, and performance audits to deliver a fast,
+    conversion-optimized page.

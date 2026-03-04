@@ -174,3 +174,28 @@ function DateDisplay({ date }: { date: Date }) {
   return <span>{format.dateTime(date, { dateStyle: "medium" })}</span>;
 }
 ```
+
+## Do
+
+- Use namespaces to group translations by feature or page (`"users"`, `"auth"`, `"common"`).
+- Use `getTranslations` in Server Components and Server Actions for server-side translations.
+- Use ICU message syntax for plurals and interpolation instead of string concatenation.
+- Use `useFormatter` for locale-aware date, number, and currency formatting.
+- Keep a `"common"` namespace for shared strings like "Save", "Cancel", "Delete".
+
+## Don't
+
+- Don't hardcode user-facing strings in components — always use translation keys.
+- Don't use `useTranslations` in Server Components — use `getTranslations` instead.
+- Don't concatenate translated strings to build sentences — use ICU message parameters.
+- Don't forget to translate Zod validation messages — use the custom error map pattern.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Hardcoded strings in JSX** | Untranslatable, breaks multi-language support | Extract all user-facing text to message files with translation keys |
+| **String concatenation for plurals** | Incorrect grammar in many languages (`"1 items"`) | Use ICU plural syntax: `"{count, plural, one {# item} other {# items}}"` |
+| **One giant flat translation file** | Hard to maintain, merge conflicts, slow to find keys | Split translations into namespaces by feature or page |
+| **Translating in client components with `getTranslations`** | Server-only function called in client context causes errors | Use `useTranslations` hook in Client Components |
+| **Formatting dates with `toLocaleDateString()`** | Inconsistent with app locale, ignores user preferences | Use `useFormatter().dateTime()` from next-intl for consistent locale-aware formatting |

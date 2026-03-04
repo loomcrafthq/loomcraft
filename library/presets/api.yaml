@@ -1,0 +1,49 @@
+name: API
+description: Backend API service with security, validation, testing, and performance focus.
+agents:
+  - orchestrator
+  - brainstormer
+  - planner
+  - backend
+  - database
+  - security
+  - tests
+  - review-qa
+  - performance
+  - devops
+skills:
+  - brainstorming
+  - task-planning
+  - code-review
+  - project-bootstrap
+  - api-design
+  - drizzle-patterns
+  - env-validation
+  - testing-patterns
+  - tdd-workflow
+  - layered-architecture
+  - auth-rbac
+  - better-auth-patterns
+pipeline:
+  - brainstorm
+  - plan
+  - dev
+  - review
+  - test
+constitution:
+  principles:
+    - Security first — validate all inputs, sanitize all outputs
+    - Type-safe contracts — use Zod schemas as single source of truth
+    - Test everything — unit tests for logic, integration tests for endpoints
+    - Fail gracefully — meaningful error messages, proper HTTP status codes
+  conventions:
+    - Define Zod schemas for all request/response payloads
+    - Use middleware for auth, rate limiting, and CORS
+    - Implement consistent error response format across all endpoints
+    - Write integration tests for every endpoint
+    - Use database transactions for multi-step mutations
+context:
+  projectDescription: >
+    This is a backend API service. It uses the orchestrator pipeline to brainstorm requirements,
+    plan tasks, develop endpoints, review code, and run tests. Security and testing agents ensure
+    robust, production-ready APIs.

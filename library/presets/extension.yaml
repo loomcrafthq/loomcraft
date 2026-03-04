@@ -1,0 +1,44 @@
+name: Extension
+description: Chrome browser extension with popup UI, content scripts, and security hardening.
+agents:
+  - orchestrator
+  - brainstormer
+  - planner
+  - frontend
+  - backend
+  - tests
+  - security
+  - review-qa
+skills:
+  - brainstorming
+  - task-planning
+  - code-review
+  - project-bootstrap
+  - chrome-extension-patterns
+  - tailwind-patterns
+  - ui-ux-guidelines
+  - testing-patterns
+  - env-validation
+pipeline:
+  - brainstorm
+  - plan
+  - dev
+  - review
+  - test
+constitution:
+  principles:
+    - Minimal permissions — request only what the extension needs
+    - Performance — extensions must not slow down the browser
+    - Security — content scripts run in untrusted pages, sanitize everything
+    - User privacy — never collect data without explicit consent
+  conventions:
+    - Use Manifest V3 for all new extensions
+    - Separate popup, background, and content script concerns
+    - Use Tailwind CSS for popup and options page styling
+    - Test content scripts against multiple page structures
+    - Store settings in chrome.storage, not localStorage
+context:
+  projectDescription: >
+    This is a Chrome browser extension. The orchestrator coordinates UI development, background
+    logic, content script implementation, security review, and testing to deliver a fast, secure
+    browser extension.

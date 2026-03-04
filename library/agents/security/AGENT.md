@@ -12,6 +12,7 @@ tools:
 skills:
   - auth-rbac
   - better-auth-patterns
+  - env-validation
 model: inherit
 ---
 

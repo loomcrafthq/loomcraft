@@ -10,6 +10,7 @@ tools:
 skills:
   - hero-copywriting
   - seo-optimization
+  - i18n-patterns
 model: inherit
 ---
 

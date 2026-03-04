@@ -32,7 +32,7 @@ export async function initCommand(presetSlug?: string, opts: InitOptions = {} as
     const hasFlags = !!(opts.addAgent || opts.removeAgent || opts.addSkill || opts.removeSkill);
 
     if (!presetSlug && hasFlags) {
-      console.error(pc.red("\n  Error: flags require a preset argument. Usage: loom init <preset> [flags]\n"));
+      console.error(pc.red("\n  Error: flags require a preset argument. Usage: loomcraft init <preset> [flags]\n"));
       process.exit(1);
     }
 
@@ -54,7 +54,7 @@ export async function initCommand(presetSlug?: string, opts: InitOptions = {} as
 // --- Interactive Mode ---
 
 async function interactiveInit(target: TargetConfig, targetExplicit?: boolean): Promise<void> {
-  p.intro(pc.bgCyan(pc.black(" loom init ")));
+  p.intro(pc.bgCyan(pc.black(" loomcraft init ")));
 
   // Skip target selection when explicitly set via --claude, --cursor, or --target
   if (!targetExplicit) {

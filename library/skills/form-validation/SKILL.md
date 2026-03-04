@@ -167,3 +167,36 @@ For complex forms, split into logical sections using Cards:
   </div>
 </form>
 ```
+
+## Do
+
+- Define one Zod schema per form in `src/schemas/` and share it between client and server.
+- Always provide `defaultValues` for every field in `useForm` -- react-hook-form requires it for controlled behavior.
+- Use ShadCN `FormField` + `FormMessage` so validation errors render inline next to each field.
+- Disable the submit button while `isSubmitting` is true to prevent double submissions.
+- Use `zodResolver` from `@hookform/resolvers/zod` for client-side validation.
+- Re-validate on the server with `schema.safeParse()` -- never trust client-only validation.
+- Split complex forms into logical Card sections for readability.
+- Use `.optional()` and `.default()` in Zod to express optional fields explicitly.
+
+## Don't
+
+- Don't inline Zod schemas inside components -- keep them in `src/schemas/{entity}.schema.ts`.
+- Don't show validation errors only in toasts -- always show them inline next to the relevant field.
+- Don't skip server-side validation because the client already validated -- the client can be bypassed.
+- Don't forget `defaultValues` -- missing defaults cause react-hook-form to treat fields as uncontrolled.
+- Don't use `onChange` mode for validation unless the form specifically needs real-time feedback -- `onSubmit` (default) is less noisy.
+- Don't duplicate Zod schemas for client and server -- use a single shared schema file.
+- Don't use native HTML validation attributes (`required`, `pattern`) alongside Zod -- let Zod be the single source of truth.
+- Don't leave the submit button enabled during pending requests -- users will double-submit.
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|---|---|---|
+| **Duplicated schemas** | Separate Zod schemas for client and server drift apart, causing inconsistent validation. | Define one schema in `src/schemas/` and import it in both places. |
+| **Toast-only errors** | Validation errors shown only as toasts disappear quickly and don't indicate which field failed. | Use `FormMessage` to render errors inline next to each field. |
+| **Missing defaultValues** | Omitting `defaultValues` in `useForm` causes uncontrolled-to-controlled warnings and broken resets. | Provide a `defaultValues` entry for every field, even if it's an empty string. |
+| **Client-only validation** | Validating only on the client; a crafted request bypasses the form and submits invalid data. | Always call `schema.safeParse(input)` on the server inside the action. |
+| **Inline schema definition** | Schema defined inside the component file, making it impossible to share with the server. | Move the schema to `src/schemas/{entity}.schema.ts` and import it. |
+| **No pending state** | Submit button stays enabled during the request, causing duplicate submissions and race conditions. | Check `form.formState.isSubmitting` or `isPending` from `useTransition` and disable the button. |

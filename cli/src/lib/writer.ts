@@ -42,6 +42,13 @@ export function writeOrchestrator(target: TargetConfig, content: string, cwd = p
   const filePath = path.join(cwd, target.dir, target.orchestratorFile);
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, content, "utf-8");
+
+  // Clean up legacy orchestrator.md at the old location (directly in .claude/)
+  const legacyPath = path.join(cwd, target.dir, "orchestrator.md");
+  if (legacyPath !== filePath && fs.existsSync(legacyPath)) {
+    fs.unlinkSync(legacyPath);
+  }
+
   return filePath;
 }
 
