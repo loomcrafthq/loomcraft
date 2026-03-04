@@ -4,22 +4,18 @@ Multi-agent development pipeline for Claude Code and Cursor. **13 agents**, **33
 
 Loomcraft scaffolds a complete AI development workflow into your project. An orchestrator agent runs a pipeline (brainstorm → plan → dev → review → test), delegating to specialized agents that each carry domain-specific skills.
 
-## Install
-
-```bash
-npm i -g @loomcraft/cli
-```
-
 ## Quick start
 
 ```bash
 # Interactive — pick preset, agents, and skills
-loomcraft init
+npx @loomcraft/cli init
 
 # One-liner with a preset
-loomcraft init saas --claude
-loomcraft init landing --cursor
+npx @loomcraft/cli init saas --claude
+npx @loomcraft/cli init landing --cursor
 ```
+
+> **Optional global install:** `npm i -g @loomcraft/cli` then use `loomcraft` directly.
 
 ## Commands
 
