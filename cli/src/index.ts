@@ -9,6 +9,7 @@ import {
   marketplaceInstallCommand,
   marketplaceUpdateCommand,
 } from "./commands/marketplace.js";
+import { importCommand } from "./commands/import.js";
 import { resolveTarget, DEFAULT_TARGET, listTargetNames, BUILTIN_TARGETS } from "./lib/target.js";
 import { loadConfig } from "./lib/config.js";
 
@@ -105,6 +106,16 @@ program
       ? resolveTarget(opts.target, opts.targetDir, opts.contextFile)
       : savedConfig ?? BUILTIN_TARGETS[DEFAULT_TARGET];
     await syncCommand(target);
+  });
+
+program
+  .command("import")
+  .description("Import agents and skills from an existing project (.claude/ or .cursor/)")
+  .argument("[path]", "Project directory (defaults to cwd)")
+  .option("--dry-run", "Preview without writing")
+  .option("--json", "Output scan result as JSON")
+  .action(async (targetPath: string | undefined, opts: { dryRun?: boolean; json?: boolean }) => {
+    await importCommand(targetPath, opts);
   });
 
 const mp = program
