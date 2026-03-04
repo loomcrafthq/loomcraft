@@ -2,7 +2,7 @@ import matter from "gray-matter";
 import type { Preset } from "./library.js";
 import type { TargetConfig } from "./target.js";
 
-interface AgentInfo {
+export interface AgentInfo {
   slug: string;
   name: string;
   role: string;
@@ -71,6 +71,28 @@ export function generateContextFile(
   lines.push("");
 
   // Agents — loomcraft-managed section
+  lines.push(generateAgentsSection(agents, target));
+  lines.push("");
+
+  // Skills — loomcraft-managed section
+  if (skillSlugs.length > 0) {
+    lines.push(generateSkillsSection(skillSlugs));
+    lines.push("");
+  }
+
+  // Orchestrator usage
+  lines.push("## How to use");
+  lines.push("");
+  lines.push(`For any task, invoke the **orchestrator** agent. It runs a pipeline (brainstorm → plan → dev → review → test) and delegates to the appropriate specialized agents. Each agent has access to its assigned skills for domain-specific guidance.`);
+  lines.push("");
+  lines.push(`All agents are in \`${target.dir}/${target.agentsSubdir}/\` and skills in \`${target.dir}/${target.skillsSubdir}/\`.`);
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+export function generateAgentsSection(agents: AgentInfo[], target: TargetConfig): string {
+  const lines: string[] = [];
   lines.push("<!-- loomcraft:agents:start -->");
   lines.push("## Agents");
   lines.push("");
@@ -87,32 +109,60 @@ export function generateContextFile(
     lines.push("");
   }
   lines.push("<!-- loomcraft:agents:end -->");
-  lines.push("");
+  return lines.join("\n");
+}
 
-  // Skills — loomcraft-managed section
-  if (skillSlugs.length > 0) {
-    lines.push("<!-- loomcraft:skills:start -->");
-    lines.push("## Skills");
-    lines.push("");
-    lines.push("Installed skills providing domain-specific conventions and patterns:");
-    lines.push("");
-    for (const slug of skillSlugs) {
-      lines.push(`- \`${slug}\``);
-    }
-    lines.push("");
-    lines.push("<!-- loomcraft:skills:end -->");
-    lines.push("");
+export function generateSkillsSection(skillSlugs: string[]): string {
+  const lines: string[] = [];
+  lines.push("<!-- loomcraft:skills:start -->");
+  lines.push("## Skills");
+  lines.push("");
+  lines.push("Installed skills providing domain-specific conventions and patterns:");
+  lines.push("");
+  for (const slug of skillSlugs) {
+    lines.push(`- \`${slug}\``);
+  }
+  lines.push("");
+  lines.push("<!-- loomcraft:skills:end -->");
+  return lines.join("\n");
+}
+
+export function mergeContextFile(
+  existingContent: string,
+  agents: AgentInfo[],
+  target: TargetConfig,
+  skillSlugs: string[]
+): string {
+  let result = existingContent;
+
+  // Replace or append agents section
+  const agentsSection = generateAgentsSection(agents, target);
+  const agentsRegex = /<!-- loomcraft:agents:start -->[\s\S]*?<!-- loomcraft:agents:end -->/;
+
+  if (agentsRegex.test(result)) {
+    result = result.replace(agentsRegex, agentsSection);
+  } else {
+    result = result.trimEnd() + "\n\n" + agentsSection + "\n";
   }
 
-  // Orchestrator usage
-  lines.push("## How to use");
-  lines.push("");
-  lines.push(`For any task, invoke the **orchestrator** agent. It runs a pipeline (brainstorm → plan → dev → review → test) and delegates to the appropriate specialized agents. Each agent has access to its assigned skills for domain-specific guidance.`);
-  lines.push("");
-  lines.push(`All agents are in \`${target.dir}/${target.agentsSubdir}/\` and skills in \`${target.dir}/${target.skillsSubdir}/\`.`);
-  lines.push("");
+  // Replace or append skills section
+  const skillsRegex = /<!-- loomcraft:skills:start -->[\s\S]*?<!-- loomcraft:skills:end -->/;
 
-  return lines.join("\n");
+  if (skillSlugs.length > 0) {
+    const skillsSection = generateSkillsSection(skillSlugs);
+    if (skillsRegex.test(result)) {
+      result = result.replace(skillsRegex, skillsSection);
+    } else {
+      result = result.trimEnd() + "\n\n" + skillsSection + "\n";
+    }
+  } else {
+    // No skills — remove existing skills section if present
+    if (skillsRegex.test(result)) {
+      result = result.replace(skillsRegex, "").replace(/\n{3,}/g, "\n\n");
+    }
+  }
+
+  return result;
 }
 
 export function generateOrchestrator(

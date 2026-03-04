@@ -38,6 +38,9 @@ loomcraft init saas --remove-agent marketing --add-skill prisma-patterns
 | `--remove-agent <slugs...>` | Remove agents from the preset |
 | `--add-skill <slugs...>` | Add extra skills |
 | `--remove-skill <slugs...>` | Remove skills |
+| `--overwrite` | Overwrite existing context file instead of merging |
+
+**Context file merge:** When the context file (`CLAUDE.md` / `.cursorrules`) already exists, `init` preserves your custom content and only updates the Loomcraft-managed sections (agents and skills). In interactive mode, you'll be prompted to choose merge or overwrite. In non-interactive mode, merge is the default — use `--overwrite` to replace the entire file.
 
 ### `loomcraft list [type]`
 
@@ -50,7 +53,7 @@ loomcraft list presets   # presets only
 
 ### `loomcraft add <type> <slug>`
 
-Add a single agent or skill to an existing project. Automatically regenerates the orchestrator.
+Add a single agent or skill to an existing project. Automatically regenerates the orchestrator and updates the context file.
 
 ```bash
 loomcraft add agent devops
@@ -59,7 +62,7 @@ loomcraft add skill ai-patterns
 
 ### `loomcraft sync`
 
-Regenerate the orchestrator based on currently installed agents and skills. Useful after manual changes.
+Regenerate the orchestrator and update the context file's agents/skills sections based on currently installed agents and skills. Useful after manual changes.
 
 ```bash
 loomcraft sync

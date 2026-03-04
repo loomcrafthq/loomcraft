@@ -3,7 +3,7 @@ import path from "node:path";
 import pc from "picocolors";
 import matter from "gray-matter";
 import { listAgents, getAgent } from "../lib/library.js";
-import { generateOrchestrator, type AgentWithSkills } from "../lib/generator.js";
+import { generateOrchestrator, mergeContextFile, type AgentWithSkills, type AgentInfo } from "../lib/generator.js";
 import { writeOrchestrator } from "../lib/writer.js";
 import type { TargetConfig } from "../lib/target.js";
 
@@ -85,5 +85,22 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
   writeOrchestrator(target, orchestratorContent);
 
   console.log(pc.green(`\n  ✓ Orchestrator regenerated with ${agentsWithSkills.length} agents and ${installedSkills.length} skills.`));
-  console.log(pc.dim(`    ${target.dir}/${target.orchestratorFile}\n`));
+  console.log(pc.dim(`    ${target.dir}/${target.orchestratorFile}`));
+
+  // Merge context file if it exists
+  const contextFilePath = path.join(cwd, target.contextFile);
+  if (fs.existsSync(contextFilePath)) {
+    const existingContent = fs.readFileSync(contextFilePath, "utf-8");
+    const agentInfos: AgentInfo[] = agentsWithSkills.map((a) => ({
+      slug: a.slug,
+      name: a.name,
+      role: "",
+      description: a.description,
+    }));
+    const merged = mergeContextFile(existingContent, agentInfos, target, installedSkills);
+    fs.writeFileSync(contextFilePath, merged, "utf-8");
+    console.log(pc.green(`  ✓ ${target.contextFile} merged`));
+  }
+
+  console.log("");
 }

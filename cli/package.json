@@ -1,6 +1,6 @@
 {
   "name": "@loomcraft/cli",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Multi-agent development pipeline for Claude Code and Cursor — 13 agents, 33 skills, 10 presets",
   "type": "module",
   "license": "MIT",

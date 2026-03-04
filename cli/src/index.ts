@@ -59,6 +59,7 @@ program
   .option("--target <name>", `Output target: ${[...listTargetNames(), "custom"].join(", ")}`)
   .option("--target-dir <dir>", "Custom target directory")
   .option("--context-file <file>", "Custom context file name")
+  .option("--overwrite", "Overwrite existing context file instead of merging")
   .action(async (preset: string | undefined, opts: Record<string, unknown>) => {
     // Resolve target: shortcut flags > --target > default
     let target: ReturnType<typeof resolveTarget>;
@@ -88,6 +89,7 @@ program
       removeSkill: opts.removeSkill as string[] | undefined,
       target,
       targetExplicit,
+      overwrite: !!opts.overwrite,
     });
   });
 

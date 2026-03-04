@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import pc from "picocolors";
 import * as p from "@clack/prompts";
 import matter from "gray-matter";
@@ -23,6 +25,7 @@ export interface InitOptions {
   removeSkill?: string[];
   target: TargetConfig;
   targetExplicit?: boolean;
+  overwrite?: boolean;
 }
 
 // --- Entry Point ---
@@ -178,10 +181,31 @@ async function interactiveInit(target: TargetConfig, targetExplicit?: boolean): 
     process.exit(0);
   }
 
+  // Check if context file exists — ask merge or overwrite
+  let merge = false;
+  const contextFilePath = path.join(process.cwd(), target.contextFile);
+  if (fs.existsSync(contextFilePath)) {
+    const mergeChoice = await p.select({
+      message: `${target.contextFile} already exists. How should we handle it?`,
+      options: [
+        { value: "merge", label: "Merge — update agents/skills sections, preserve your custom content" },
+        { value: "overwrite", label: "Overwrite — replace the entire file" },
+      ],
+      initialValue: "merge",
+    });
+
+    if (p.isCancel(mergeChoice)) {
+      p.cancel("Operation cancelled.");
+      process.exit(0);
+    }
+
+    merge = mergeChoice === "merge";
+  }
+
   const s = p.spinner();
   s.start("Generating project files...");
 
-  await generateAndWrite(preset, agentSlugs, skillSlugs, target);
+  await generateAndWrite(preset, agentSlugs, skillSlugs, target, merge);
 
   saveConfig(target);
   s.stop("Project files generated.");
@@ -243,9 +267,13 @@ async function nonInteractiveInit(presetSlug: string, opts: InitOptions): Promis
     skillSlugs = skillSlugs.filter((s) => !opts.removeSkill!.includes(s));
   }
 
+  // Non-interactive: merge by default unless --overwrite
+  const contextFilePath = path.join(process.cwd(), target.contextFile);
+  const merge = !opts.overwrite && fs.existsSync(contextFilePath);
+
   console.log(pc.bold(pc.cyan(`\n  Initializing preset "${preset.name}"...\n`)));
 
-  await generateAndWrite(preset, agentSlugs, skillSlugs, target);
+  await generateAndWrite(preset, agentSlugs, skillSlugs, target, merge);
   saveConfig(target);
 
   console.log(
@@ -259,7 +287,7 @@ async function nonInteractiveInit(presetSlug: string, opts: InitOptions): Promis
 
 // --- Shared Generation Logic ---
 
-async function generateAndWrite(preset: Preset, agentSlugs: string[], skillSlugs: string[], target: TargetConfig): Promise<void> {
+async function generateAndWrite(preset: Preset, agentSlugs: string[], skillSlugs: string[], target: TargetConfig, merge = false): Promise<void> {
   // Fetch all agents and skills in parallel
   const agentResults = await Promise.allSettled(
     agentSlugs.map((slug) => getAgent(slug))
@@ -331,8 +359,12 @@ async function generateAndWrite(preset: Preset, agentSlugs: string[], skillSlugs
 
   // Generate context file
   const contextContent = generateContextFile(preset, agentInfos, target, skillSlugs);
-  writeContextFile(target, contextContent);
-  console.log(pc.green(`  ✓ ${target.contextFile} generated`));
+  writeContextFile(target, contextContent, process.cwd(), {
+    merge,
+    agents: agentInfos,
+    skillSlugs,
+  });
+  console.log(pc.green(`  ✓ ${target.contextFile} ${merge ? "merged" : "generated"}`));
 }
 
 // --- Skill Filtering Algorithm ---

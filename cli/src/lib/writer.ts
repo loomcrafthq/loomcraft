@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { TargetConfig } from "./target.js";
 import type { SkillFile } from "./library.js";
+import { mergeContextFile, type AgentInfo } from "./generator.js";
 
 function ensureDir(dirPath: string): void {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -52,8 +53,27 @@ export function writeOrchestrator(target: TargetConfig, content: string, cwd = p
   return filePath;
 }
 
-export function writeContextFile(target: TargetConfig, content: string, cwd = process.cwd()): string {
+export interface WriteContextOptions {
+  merge?: boolean;
+  agents?: AgentInfo[];
+  skillSlugs?: string[];
+}
+
+export function writeContextFile(
+  target: TargetConfig,
+  content: string,
+  cwd = process.cwd(),
+  options: WriteContextOptions = {}
+): string {
   const filePath = path.join(cwd, target.contextFile);
-  fs.writeFileSync(filePath, content, "utf-8");
+
+  if (options.merge && fs.existsSync(filePath) && options.agents) {
+    const existing = fs.readFileSync(filePath, "utf-8");
+    const merged = mergeContextFile(existing, options.agents, target, options.skillSlugs ?? []);
+    fs.writeFileSync(filePath, merged, "utf-8");
+  } else {
+    fs.writeFileSync(filePath, content, "utf-8");
+  }
+
   return filePath;
 }
