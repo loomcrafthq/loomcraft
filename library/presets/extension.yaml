@@ -16,6 +16,7 @@ skills:
   - github/awesome-copilot/conventional-commit
   - loomcrafthq/skills/ticket-craft
   - loomcrafthq/skills/testing-patterns
+  - loomcrafthq/skills/security-audit
   - obra/superpowers/test-driven-development
   - anthropics/skills/frontend-design
   - vercel-labs/agent-skills/vercel-react-best-practices

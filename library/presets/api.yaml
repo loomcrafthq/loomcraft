@@ -16,6 +16,7 @@ skills:
   - github/awesome-copilot/conventional-commit
   - loomcrafthq/skills/ticket-craft
   - loomcrafthq/skills/testing-patterns
+  - loomcrafthq/skills/security-audit
   - obra/superpowers/test-driven-development
   - supabase/agent-skills/supabase-postgres-best-practices
   - anthropics/skills/webapp-testing
