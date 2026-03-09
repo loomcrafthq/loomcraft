@@ -1,47 +1,41 @@
 name: Mobile
-description: React Native / Expo mobile application with Supabase backend and native UI patterns.
+description: Mobile application with React Native, full agent pipeline, and cross-platform testing.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
-  - frontend
-  - backend
   - database
+  - backend
+  - frontend
   - ux-ui
-  - tests
+  - tester
   - review-qa
-  - performance
+  - security
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - react-native-patterns
-  - supabase-patterns
-  - ui-ux-guidelines
-  - testing-patterns
-  - api-design
-  - env-validation
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Native feel — follow platform conventions for iOS and Android
-    - Offline-first — design for intermittent connectivity
-    - Performance on device — optimize for mid-range mobile hardware
-    - Type safety — TypeScript strict mode across the entire codebase
-  conventions:
-    - Use Expo Router for navigation
-    - Supabase for auth, database, and real-time sync
-    - Test on both iOS and Android simulators
-    - Follow platform-specific UI guidelines (HIG, Material Design)
-    - Use responsive units and safe area insets
-context:
-  projectDescription: >
-    This is a mobile application built with React Native and Expo. The orchestrator coordinates
-    feature brainstorming, task planning, cross-platform development, and testing. Supabase provides
-    the backend infrastructure.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/linear-conventions
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/testing-patterns
+  - loomcraft/skills/react-native-patterns
+workflow:
+  preparation:
+    source: linear
+  pipeline:
+    - agent: database
+      condition: "if migrations needed"
+    - agent: tester
+      mode: tdd
+      scope: "database + backend"
+    - agent: backend
+    - agent: ux-ui
+      condition: "if UI needed"
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+    - security
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

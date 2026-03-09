@@ -1,48 +1,42 @@
 name: AI App
-description: AI-powered application with LLM integration, RAG pipeline, streaming, and tool use.
+description: AI-powered application with LLM integration, prompt engineering, and full-stack pipeline.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
-  - frontend
-  - backend
   - database
-  - tests
+  - backend
+  - frontend
+  - ux-ui
+  - tester
   - review-qa
-  - performance
+  - security
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - ai-patterns
-  - api-design
-  - drizzle-patterns
-  - testing-patterns
-  - nextjs-conventions
-  - tailwind-patterns
-  - shadcn-ui
-  - env-validation
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Stream by default — never make users wait for complete AI responses
-    - Cost-aware — choose the right model size for each task
-    - Validate AI output — LLM responses are untrusted input
-    - Graceful degradation — always have a fallback when AI fails
-  conventions:
-    - Use Vercel AI SDK for LLM integration
-    - Implement streaming for all AI-generated content
-    - Validate LLM JSON output with Zod schemas
-    - Cache embeddings and frequent queries
-    - Rate limit AI endpoints per user
-context:
-  projectDescription: >
-    This is an AI-powered application (chatbot, RAG, or AI agent). The orchestrator coordinates
-    AI feature brainstorming, pipeline planning, LLM integration development, and testing to deliver
-    a responsive, cost-effective AI experience.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/linear-conventions
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/testing-patterns
+  - loomcraft/skills/ai-patterns
+  - loomcraft/skills/api-design
+workflow:
+  preparation:
+    source: linear
+  pipeline:
+    - agent: database
+      condition: "if migrations needed"
+    - agent: tester
+      mode: tdd
+      scope: "database + backend"
+    - agent: backend
+    - agent: ux-ui
+      condition: "if UI needed"
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+    - security
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

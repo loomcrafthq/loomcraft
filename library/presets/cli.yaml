@@ -1,42 +1,29 @@
 name: CLI
-description: Node.js command-line tool with testing, TDD workflow, and CI/CD pipeline.
+description: Command-line tool with robust argument parsing, testing, and security hardening.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
   - backend
-  - tests
+  - tester
   - review-qa
-  - devops
+  - security
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - cli-development
-  - testing-patterns
-  - env-validation
-  - tdd-workflow
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - User experience matters in CLI too — clear help, meaningful errors
-    - Test-driven — write tests before implementation for core commands
-    - Fast startup — CLI tools must feel instant
-    - Composable — support piping and scripting use cases
-  conventions:
-    - Use Commander.js or similar for command parsing
-    - Provide --help and --version on every command
-    - Use exit codes correctly (0 success, 1 error, 2 usage error)
-    - Write unit tests for every command handler
-    - Support both interactive and non-interactive modes
-context:
-  projectDescription: >
-    This is a Node.js CLI tool. The orchestrator coordinates feature brainstorming, test-driven
-    development planning, implementation, and review to deliver a robust, well-tested command-line
-    application.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/testing-patterns
+  - loomcraft/skills/cli-development
+workflow:
+  preparation:
+    source: linear
+  pipeline:
+    - agent: tester
+      mode: tdd
+      scope: "backend"
+    - agent: backend
+  verification:
+    - review-qa
+    - tester
+    - security
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

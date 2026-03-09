@@ -3,8 +3,6 @@ import path from "node:path";
 import matter from "gray-matter";
 import YAML from "yaml";
 import { BUILTIN_TARGETS } from "./target.js";
-import type { SkillFile } from "./library.js";
-import { safeWalkDir } from "./security.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,16 +12,7 @@ export interface ScannedAgent {
   slug: string;
   name: string;
   description: string;
-  role: string;
-  skills: string[];
   content: string;
-}
-
-export interface ScannedSkill {
-  slug: string;
-  name: string;
-  description: string;
-  files: SkillFile[];
 }
 
 export interface SkippedItem {
@@ -35,7 +24,6 @@ export interface ScanResult {
   target: "claude-code" | "cursor";
   projectName: string;
   agents: ScannedAgent[];
-  skills: ScannedSkill[];
   skipped: SkippedItem[];
 }
 
@@ -59,11 +47,9 @@ export function scanTarget(
 ): ScanResult {
   const config = BUILTIN_TARGETS[targetName];
   const agents: ScannedAgent[] = [];
-  const skills: ScannedSkill[] = [];
   const skipped: SkippedItem[] = [];
 
   const agentsDir = path.join(dir, config.dir, config.agentsSubdir);
-  const skillsDir = path.join(dir, config.dir, config.skillsSubdir);
 
   // --- Scan agents ---
   if (fs.existsSync(agentsDir)) {
@@ -84,11 +70,6 @@ export function scanTarget(
     }
 
     for (const slug of agentDirs) {
-      if (slug === "orchestrator") {
-        skipped.push({ path: `${config.agentsSubdir}/${slug}`, reason: "Orchestrator (auto-generated)" });
-        continue;
-      }
-
       const agentFile = path.join(agentsDir, slug, "AGENT.md");
       if (!fs.existsSync(agentFile)) {
         skipped.push({ path: `${config.agentsSubdir}/${slug}`, reason: "No AGENT.md found" });
@@ -97,29 +78,24 @@ export function scanTarget(
 
       try {
         const raw = fs.readFileSync(agentFile, "utf-8");
-        const { data, content } = matter(raw);
+        const { data } = matter(raw);
         const fm = data as Record<string, unknown>;
         agents.push({
           slug,
           name: (fm.name as string) || slug,
           description: (fm.description as string) || "",
-          role: (fm.role as string) || "general",
-          skills: Array.isArray(fm.skills) ? (fm.skills as string[]) : [],
           content: raw,
         });
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === "EACCES") {
           skipped.push({ path: `${config.agentsSubdir}/${slug}`, reason: "Permission denied" });
         } else {
-          // No frontmatter or parse error — use defaults
           try {
             const raw = fs.readFileSync(agentFile, "utf-8");
             agents.push({
               slug,
               name: slug,
               description: "",
-              role: "general",
-              skills: [],
               content: raw,
             });
           } catch {
@@ -130,92 +106,31 @@ export function scanTarget(
     }
   }
 
-  // --- Scan skills ---
-  if (fs.existsSync(skillsDir)) {
-    let skillDirs: string[];
-    try {
-      skillDirs = fs
-        .readdirSync(skillsDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name);
-    } catch (err) {
-      skipped.push({
-        path: `${config.dir}/${config.skillsSubdir}`,
-        reason: (err as NodeJS.ErrnoException).code === "EACCES"
-          ? "Permission denied"
-          : "Cannot read directory",
-      });
-      skillDirs = [];
-    }
-
-    for (const slug of skillDirs) {
-      const skillDir = path.join(skillsDir, slug);
-      const relativePaths = safeWalkDir(skillDir);
-
-      if (relativePaths.length === 0) {
-        skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: "Empty directory" });
-        continue;
-      }
-
-      try {
-        const files: SkillFile[] = relativePaths.map((relativePath) => ({
-          relativePath,
-          content: fs.readFileSync(path.join(skillDir, relativePath), "utf-8"),
-        }));
-
-        // Try to extract metadata from SKILL.md if present
-        let name = slug;
-        let description = "";
-        const mainFile = files.find(
-          (f) => f.relativePath === "SKILL.md" || f.relativePath === "skill.md"
-        );
-        if (mainFile) {
-          try {
-            const { data } = matter(mainFile.content);
-            const fm = data as Record<string, string>;
-            if (fm.name) name = fm.name;
-            if (fm.description) description = fm.description;
-          } catch {
-            // Ignore frontmatter parse errors
-          }
-        }
-
-        skills.push({ slug, name, description, files });
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === "EACCES") {
-          skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: "Permission denied" });
-        } else {
-          skipped.push({ path: `${config.skillsSubdir}/${slug}`, reason: "Cannot read files" });
-        }
-      }
-    }
-  }
-
   return {
     target: targetName,
     projectName: path.basename(dir),
     agents,
-    skills,
     skipped,
   };
 }
 
 export function generatePresetYaml(
   projectName: string,
-  agents: ScannedAgent[],
-  skills: ScannedSkill[]
+  agents: ScannedAgent[]
 ): string {
   const preset = {
     name: projectName,
     description: `Imported from ${projectName}`,
-    agents: ["orchestrator", ...agents.map((a) => a.slug)],
-    skills: skills.map((s) => s.slug),
-    constitution: {
-      principles: [],
-      conventions: [],
-    },
-    context: {
-      projectDescription: `Imported project: ${projectName}`,
+    agents: agents.map((a) => a.slug),
+    skills: [],
+    workflow: {
+      preparation: { source: "manual" },
+      pipeline: agents.map((a) => ({ agent: a.slug })),
+      verification: ["review-qa"],
+      finalization: {
+        commits: "conventional",
+        branch: "feat/<ticket-id>-<description>",
+      },
     },
   };
   return YAML.stringify(preset);

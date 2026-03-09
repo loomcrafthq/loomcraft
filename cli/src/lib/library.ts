@@ -3,23 +3,46 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import YAML from "yaml";
-import { safeWalkDir } from "./security.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "../data");
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export interface AgentSummary {
   slug: string;
   name: string;
   description: string;
-  role: string;
-  skills: string[];
 }
 
-interface SkillSummary {
+export interface WorkflowStep {
+  agent: string;
+  condition?: string;
+  mode?: "tdd" | "test-after";
+  scope?: string;
+}
+
+export interface Workflow {
+  preparation: {
+    source: "linear" | "github-issues" | "manual";
+  };
+  pipeline: WorkflowStep[];
+  verification: string[];
+  finalization: {
+    commits: "conventional" | "custom";
+    branch: string;
+  };
+}
+
+export interface Preset {
   slug: string;
   name: string;
   description: string;
+  agents: string[];
+  skills: string[]; // external refs: "loomcraft/skills/brainstorm"
+  workflow: Workflow;
 }
 
 interface PresetSummary {
@@ -30,21 +53,9 @@ interface PresetSummary {
   skillCount: number;
 }
 
-export interface Preset {
-  slug: string;
-  name: string;
-  description: string;
-  agents: string[];
-  skills: string[];
-  constitution: {
-    principles: string[];
-    conventions: string[];
-    customSections?: Record<string, string>;
-  };
-  context: {
-    projectDescription: string;
-  };
-}
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function listSubDirs(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
@@ -64,14 +75,9 @@ function listFiles(dir: string): string[] {
     .sort();
 }
 
-export interface SkillFile {
-  relativePath: string; // e.g. "SKILL.md", "examples/api.md"
-  content: string;
-}
-
-// walkDir and TEXT_EXTENSIONS moved to security.ts as safeWalkDir
-
-// --- Public API ---
+// ---------------------------------------------------------------------------
+// Public API — Agents
+// ---------------------------------------------------------------------------
 
 export async function listAgents(): Promise<AgentSummary[]> {
   const agentsDir = path.join(DATA_DIR, "agents");
@@ -88,37 +94,25 @@ export async function listAgents(): Promise<AgentSummary[]> {
         slug,
         name: (fm.name as string) || slug,
         description: (fm.description as string) || "",
-        role: (fm.role as string) || "",
-        skills: Array.isArray(fm.skills) ? (fm.skills as string[]) : [],
       });
     } catch {
-      agents.push({ slug, name: slug, description: "", role: "", skills: [] });
+      agents.push({ slug, name: slug, description: "" });
     }
   }
   return agents;
 }
 
-export async function listSkills(): Promise<SkillSummary[]> {
-  const skillsDir = path.join(DATA_DIR, "skills");
-  const slugs = listSubDirs(skillsDir);
-  const skills: SkillSummary[] = [];
-
-  for (const slug of slugs) {
-    const filePath = path.join(skillsDir, slug, "SKILL.md");
-    try {
-      const raw = fs.readFileSync(filePath, "utf-8");
-      const { data } = matter(raw);
-      skills.push({
-        slug,
-        name: (data as Record<string, string>).name || slug,
-        description: (data as Record<string, string>).description || "",
-      });
-    } catch {
-      skills.push({ slug, name: slug, description: "" });
-    }
-  }
-  return skills;
+export async function getAgent(
+  slug: string
+): Promise<{ slug: string; rawContent: string }> {
+  const filePath = path.join(DATA_DIR, "agents", slug, "AGENT.md");
+  const raw = fs.readFileSync(filePath, "utf-8");
+  return { slug, rawContent: raw };
 }
+
+// ---------------------------------------------------------------------------
+// Public API — Presets
+// ---------------------------------------------------------------------------
 
 export async function listPresets(): Promise<PresetSummary[]> {
   const presetsDir = path.join(DATA_DIR, "presets");
@@ -143,38 +137,6 @@ export async function listPresets(): Promise<PresetSummary[]> {
     }
   }
   return presets;
-}
-
-export async function getAgent(
-  slug: string
-): Promise<{ slug: string; rawContent: string }> {
-  const filePath = path.join(DATA_DIR, "agents", slug, "AGENT.md");
-  const raw = fs.readFileSync(filePath, "utf-8");
-  return { slug, rawContent: raw };
-}
-
-export async function getSkill(
-  slug: string
-): Promise<{ slug: string; rawContent: string }> {
-  const filePath = path.join(DATA_DIR, "skills", slug, "SKILL.md");
-  const raw = fs.readFileSync(filePath, "utf-8");
-  return { slug, rawContent: raw };
-}
-
-export async function getSkillWithFiles(
-  slug: string
-): Promise<{ slug: string; mainContent: string; files: SkillFile[] }> {
-  const skillDir = path.join(DATA_DIR, "skills", slug);
-  const mainPath = path.join(skillDir, "SKILL.md");
-  const mainContent = fs.readFileSync(mainPath, "utf-8");
-
-  const relativePaths = safeWalkDir(skillDir);
-  const files: SkillFile[] = relativePaths.map((relativePath) => ({
-    relativePath,
-    content: fs.readFileSync(path.join(skillDir, relativePath), "utf-8"),
-  }));
-
-  return { slug, mainContent, files };
 }
 
 export async function getPreset(slug: string): Promise<Preset> {

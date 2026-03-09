@@ -1,13 +1,11 @@
 import pc from "picocolors";
 import {
   saveLocalAgent,
-  saveLocalSkill,
   saveLocalPreset,
   saveLocalMeta,
   getLocalMeta,
   listLocalResources,
 } from "../lib/local-library.js";
-import type { SkillFile } from "../lib/library.js";
 import { validateSlug, fetchWithTimeout, verifyContentHash } from "../lib/security.js";
 
 const DEFAULT_API_URL = "https://loomcraft.dev";
@@ -22,11 +20,6 @@ interface MarketplaceItem {
   installCount: number;
 }
 
-interface ResourceFile {
-  relativePath: string;
-  content: string;
-}
-
 interface InstallResponse {
   resource: {
     id: string;
@@ -34,7 +27,6 @@ interface InstallResponse {
     slug: string;
     title: string;
     content: string;
-    files: ResourceFile[] | null;
     version: number;
     contentHash: string | null;
   };
@@ -51,7 +43,6 @@ function truncate(str: string, max: number): string {
 
 function getApiUrl(): string {
   const url = process.env.LOOMCRAFT_API_URL ?? process.env.LOOM_API_URL ?? DEFAULT_API_URL;
-  // Only allow https in production (allow http for local dev)
   if (!url.startsWith("https://") && !url.startsWith("http://localhost") && !url.startsWith("http://127.0.0.1")) {
     return DEFAULT_API_URL;
   }
@@ -140,17 +131,13 @@ export async function marketplaceInstallCommand(
     // Save to ~/.loomcraft/library/
     if (r.type === "agent") {
       saveLocalAgent(r.slug, r.content);
-    } else if (r.type === "skill") {
-      const files: SkillFile[] = r.files?.length
-        ? r.files.map((f) => ({ relativePath: f.relativePath, content: f.content }))
-        : [{ relativePath: "SKILL.md", content: r.content }];
-      saveLocalSkill(r.slug, files);
     } else if (r.type === "preset") {
       saveLocalPreset(r.slug, r.content);
     }
 
     // Save version metadata
-    saveLocalMeta(r.type as "agent" | "skill" | "preset", r.slug, {
+    const metaType = r.type === "preset" ? "preset" : "agent";
+    saveLocalMeta(metaType as "agent" | "preset", r.slug, {
       sourceSlug: r.slug,
       version: r.version,
       contentHash: r.contentHash,
@@ -159,9 +146,11 @@ export async function marketplaceInstallCommand(
     console.log(
       pc.green(`\n  ✓ Installed "${r.title}" (${r.type}) v${r.version} to ~/.loomcraft/library/\n`)
     );
-    console.log(
-      pc.dim(`  Use it: loomcraft add ${r.type} ${r.slug}\n`)
-    );
+    if (r.type === "agent") {
+      console.log(
+        pc.dim(`  Use it: loomcraft add agent ${r.slug}\n`)
+      );
+    }
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
@@ -189,11 +178,10 @@ export async function marketplaceUpdateCommand(
     const apiUrl = getApiUrl();
 
     // Determine which resources to check
-    const toCheck: { slug: string; type: "agent" | "skill" | "preset" }[] = [];
+    const toCheck: { slug: string; type: "agent" | "preset" }[] = [];
 
     if (slug) {
-      // Check all types for this slug
-      for (const type of ["agent", "skill", "preset"] as const) {
+      for (const type of ["agent", "preset"] as const) {
         const meta = getLocalMeta(type, slug);
         if (meta) {
           toCheck.push({ slug, type });
@@ -205,7 +193,6 @@ export async function marketplaceUpdateCommand(
         return;
       }
     } else {
-      // Check all installed resources that have meta
       const items = listLocalResources();
       for (const item of items) {
         const meta = getLocalMeta(item.type, item.slug);
@@ -225,7 +212,6 @@ export async function marketplaceUpdateCommand(
       const meta = getLocalMeta(item.type, item.slug);
       if (!meta) continue;
 
-      // Check for update
       const checkUrl = new URL("/api/cli/marketplace/check-update", apiUrl);
       checkUrl.searchParams.set("slug", item.slug);
 
@@ -241,7 +227,6 @@ export async function marketplaceUpdateCommand(
         continue;
       }
 
-      // Update available — re-install
       console.log(
         pc.cyan(`  ${item.slug} — v${meta.version} → v${remote.version}`)
       );

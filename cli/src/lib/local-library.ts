@@ -1,8 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import type { SkillFile } from "./library.js";
-import { sanitizeRelativePath, safeWalkDir } from "./security.js";
 
 const LIBRARY_DIR = path.join(os.homedir(), ".loomcraft", "library");
 
@@ -20,17 +18,6 @@ export function saveLocalAgent(slug: string, content: string): string {
   const filePath = path.join(dir, "AGENT.md");
   fs.writeFileSync(filePath, content, "utf-8");
   return filePath;
-}
-
-export function saveLocalSkill(slug: string, files: SkillFile[]): string {
-  const dir = path.join(LIBRARY_DIR, "skills", slug);
-  for (const file of files) {
-    const safePath = sanitizeRelativePath(file.relativePath);
-    const filePath = path.join(dir, safePath);
-    ensureDir(path.dirname(filePath));
-    fs.writeFileSync(filePath, file.content, "utf-8");
-  }
-  return dir;
 }
 
 export function saveLocalPreset(slug: string, content: string): string {
@@ -52,7 +39,7 @@ export interface LocalMeta {
 }
 
 export function saveLocalMeta(
-  type: "agent" | "skill" | "preset",
+  type: "agent" | "preset",
   slug: string,
   meta: LocalMeta
 ): void {
@@ -60,7 +47,7 @@ export function saveLocalMeta(
   if (type === "preset") {
     dir = path.join(LIBRARY_DIR, "presets");
   } else {
-    dir = path.join(LIBRARY_DIR, `${type}s`, slug);
+    dir = path.join(LIBRARY_DIR, "agents", slug);
   }
   ensureDir(dir);
   const fileName = type === "preset" ? `${slug}.meta.json` : ".meta.json";
@@ -68,14 +55,14 @@ export function saveLocalMeta(
 }
 
 export function getLocalMeta(
-  type: "agent" | "skill" | "preset",
+  type: "agent" | "preset",
   slug: string
 ): LocalMeta | null {
   let filePath: string;
   if (type === "preset") {
     filePath = path.join(LIBRARY_DIR, "presets", `${slug}.meta.json`);
   } else {
-    filePath = path.join(LIBRARY_DIR, `${type}s`, slug, ".meta.json");
+    filePath = path.join(LIBRARY_DIR, "agents", slug, ".meta.json");
   }
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
@@ -101,32 +88,13 @@ export function getLocalAgent(
   }
 }
 
-// walkDir and TEXT_EXTENSIONS moved to security.ts as safeWalkDir
-
-export function getLocalSkillWithFiles(
-  slug: string
-): { slug: string; files: SkillFile[] } | null {
-  const dir = path.join(LIBRARY_DIR, "skills", slug);
-  if (!fs.existsSync(dir)) return null;
-
-  const relativePaths = safeWalkDir(dir);
-  if (relativePaths.length === 0) return null;
-
-  const files: SkillFile[] = relativePaths.map((relativePath) => ({
-    relativePath,
-    content: fs.readFileSync(path.join(dir, relativePath), "utf-8"),
-  }));
-
-  return { slug, files };
-}
-
 // ---------------------------------------------------------------------------
 // List (used by list command)
 // ---------------------------------------------------------------------------
 
 export interface LocalItem {
   slug: string;
-  type: "agent" | "skill" | "preset";
+  type: "agent" | "preset";
 }
 
 function listSubDirs(dir: string): string[] {
@@ -146,10 +114,6 @@ export function listLocalResources(): LocalItem[] {
 
   for (const slug of listSubDirs(path.join(LIBRARY_DIR, "agents"))) {
     items.push({ slug, type: "agent" });
-  }
-
-  for (const slug of listSubDirs(path.join(LIBRARY_DIR, "skills"))) {
-    items.push({ slug, type: "skill" });
   }
 
   try {

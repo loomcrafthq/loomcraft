@@ -1,65 +1,47 @@
 name: SaaS
-description: Full-stack SaaS web application with auth, billing, multi-agent pipeline, and complete testing.
+description: Full-stack SaaS web application with auth, billing, and complete TDD pipeline.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
-  - frontend
-  - backend
   - database
+  - backend
+  - frontend
   - ux-ui
-  - marketing
-  - security
-  - performance
-  - tests
+  - tester
   - review-qa
-  - devops
+  - security
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - auth-rbac
-  - better-auth-patterns
-  - stripe-integration
-  - i18n-patterns
-  - layered-architecture
-  - drizzle-patterns
-  - server-actions-patterns
-  - form-validation
-  - react-query-patterns
-  - table-pagination
-  - testing-patterns
-  - resend-email
-  - env-validation
-  - nextjs-conventions
-  - tailwind-patterns
-  - shadcn-ui
-  - api-design
-  - ui-ux-guidelines
-  - seo-optimization
-  - hero-copywriting
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Ship fast, iterate often — prefer working software over perfect plans
-    - User-first design — every feature must solve a real user problem
-    - Type safety everywhere — leverage TypeScript strict mode
-    - Convention over configuration — follow established patterns
-    - Security by default — auth and validation on every boundary
-  conventions:
-    - Use Server Components by default, Client Components only when needed
-    - Server Actions for all mutations
-    - Zod validation at API boundaries
-    - Mobile-first responsive design
-    - Semantic HTML with ARIA attributes for accessibility
-context:
-  projectDescription: >
-    This is a SaaS application built with Next.js, using a multi-agent development pipeline.
-    The orchestrator coordinates brainstorming, planning, development, review, and testing phases.
-    Each agent follows domain-specific conventions defined in linked skills.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/linear-conventions
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/testing-patterns
+  - loomcraft/skills/auth-rbac
+  - loomcraft/skills/api-design
+  - loomcraft/skills/form-validation
+  - loomcraft/skills/seo-optimization
+  - loomcraft/skills/server-actions-patterns
+  - loomcraft/skills/drizzle-patterns
+  - loomcraft/skills/stripe-integration
+workflow:
+  preparation:
+    source: linear
+  pipeline:
+    - agent: database
+      condition: "if migrations needed"
+    - agent: tester
+      mode: tdd
+      scope: "database + backend"
+    - agent: backend
+    - agent: ux-ui
+      condition: "if UI needed"
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+    - security
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

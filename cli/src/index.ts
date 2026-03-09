@@ -20,12 +20,12 @@ const program = new Command();
 
 program
   .name("loomcraft")
-  .description("Integrate Loomcraft library (agents, skills, presets) into your project")
+  .description("Preset manager for agent skills (skills.sh) — scaffold agents, skills, and workflows")
   .version(version);
 
 program
   .command("list")
-  .description("List available agents, skills, and presets")
+  .description("List available agents, presets, and installed skills")
   .argument("[type]", "Filter by type: agents, skills, or presets")
   .action(async (type?: string) => {
     await listCommand(type);
@@ -33,9 +33,9 @@ program
 
 program
   .command("add")
-  .description("Download an agent or skill from the library")
+  .description("Add an agent from the library or a skill reference to skills.json")
   .argument("<type>", "Type: agent or skill")
-  .argument("<slug>", "Slug of the agent or skill")
+  .argument("<slug>", "Agent slug or skill reference (e.g. loomcraft/skills/auth-rbac)")
   .option("--target <name>", `Output target: ${[...listTargetNames(), "custom"].join(", ")}`, DEFAULT_TARGET)
   .option("--target-dir <dir>", "Custom target directory")
   .option("--context-file <file>", "Custom context file name")
@@ -49,12 +49,10 @@ program
 
 program
   .command("init")
-  .description("Initialize a project with a preset (agents + skills + context file)")
+  .description("Initialize a project with a preset (agents + skills.json + workflow)")
   .argument("[preset]", "Preset slug (interactive if omitted)")
   .option("--add-agent <slugs...>", "Add extra agents")
   .option("--remove-agent <slugs...>", "Remove agents from preset")
-  .option("--add-skill <slugs...>", "Add extra skills")
-  .option("--remove-skill <slugs...>", "Remove skills from preset")
   .option("--claude", "Use Claude Code target (.claude/ + CLAUDE.md)")
   .option("--cursor", "Use Cursor target (.cursor/ + .cursorrules)")
   .option("--target <name>", `Output target: ${[...listTargetNames(), "custom"].join(", ")}`)
@@ -86,8 +84,6 @@ program
     await initCommand(preset, {
       addAgent: opts.addAgent as string[] | undefined,
       removeAgent: opts.removeAgent as string[] | undefined,
-      addSkill: opts.addSkill as string[] | undefined,
-      removeSkill: opts.removeSkill as string[] | undefined,
       target,
       targetExplicit,
       overwrite: !!opts.overwrite,
@@ -96,7 +92,7 @@ program
 
 program
   .command("sync")
-  .description("Regenerate the orchestrator based on currently installed agents and skills")
+  .description("Re-install skills and update the context file")
   .option("--target <name>", `Output target: ${[...listTargetNames(), "custom"].join(", ")}`, DEFAULT_TARGET)
   .option("--target-dir <dir>", "Custom target directory")
   .option("--context-file <file>", "Custom context file name")
@@ -110,7 +106,7 @@ program
 
 program
   .command("import")
-  .description("Import agents and skills from an existing project (.claude/ or .cursor/)")
+  .description("Import agents from an existing project (.claude/ or .cursor/)")
   .argument("[path]", "Project directory (defaults to cwd)")
   .option("--dry-run", "Preview without writing")
   .option("--json", "Output scan result as JSON")
@@ -121,13 +117,13 @@ program
 const mp = program
   .command("marketplace")
   .alias("mp")
-  .description("Browse and install community resources");
+  .description("Browse and install community presets");
 
 mp.command("search")
   .alias("list")
   .description("Search the marketplace (alias: list)")
   .argument("[query]", "Search query")
-  .option("--type <type>", "Filter by type: agent, skill, preset")
+  .option("--type <type>", "Filter by type: agent, preset")
   .option("--sort <sort>", "Sort: popular, recent", "popular")
   .action(
     async (query: string | undefined, opts: { type?: string; sort?: string }) => {

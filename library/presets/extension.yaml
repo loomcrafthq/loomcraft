@@ -1,44 +1,34 @@
 name: Extension
-description: Chrome browser extension with popup UI, content scripts, and security hardening.
+description: Browser extension with content scripts, background workers, and security review.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
   - frontend
   - backend
-  - tests
-  - security
+  - tester
   - review-qa
+  - security
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - chrome-extension-patterns
-  - tailwind-patterns
-  - ui-ux-guidelines
-  - testing-patterns
-  - env-validation
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Minimal permissions — request only what the extension needs
-    - Performance — extensions must not slow down the browser
-    - Security — content scripts run in untrusted pages, sanitize everything
-    - User privacy — never collect data without explicit consent
-  conventions:
-    - Use Manifest V3 for all new extensions
-    - Separate popup, background, and content script concerns
-    - Use Tailwind CSS for popup and options page styling
-    - Test content scripts against multiple page structures
-    - Store settings in chrome.storage, not localStorage
-context:
-  projectDescription: >
-    This is a Chrome browser extension. The orchestrator coordinates UI development, background
-    logic, content script implementation, security review, and testing to deliver a fast, secure
-    browser extension.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/testing-patterns
+  - loomcraft/skills/chrome-extension-patterns
+workflow:
+  preparation:
+    source: linear
+  pipeline:
+    - agent: tester
+      mode: tdd
+      scope: "backend"
+    - agent: backend
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+    - security
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

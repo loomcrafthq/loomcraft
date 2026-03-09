@@ -1,95 +1,138 @@
-import matter from "gray-matter";
 import type { Preset } from "./library.js";
 import type { TargetConfig } from "./target.js";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export interface AgentInfo {
   slug: string;
   name: string;
-  role: string;
   description: string;
 }
 
-export interface AgentWithSkills {
-  slug: string;
-  name: string;
-  description: string;
-  skills: string[];
-}
+// ---------------------------------------------------------------------------
+// CLAUDE.md / Context file generation
+// ---------------------------------------------------------------------------
 
 export function generateContextFile(
   preset: Preset,
   agents: AgentInfo[],
   target: TargetConfig,
-  skillSlugs: string[] = []
+  stackSummary: string
 ): string {
   const lines: string[] = [];
 
   lines.push(`# ${preset.name}`);
   lines.push("");
-  lines.push(preset.context.projectDescription.trim());
+
+  // Stack section (auto-detected)
+  lines.push("<!-- loomcraft:stack:start -->");
+  lines.push("## Stack");
+  lines.push("");
+  lines.push(stackSummary);
+  lines.push("");
+  lines.push("<!-- loomcraft:stack:end -->");
   lines.push("");
 
-  // Principles
-  if (preset.constitution.principles.length > 0) {
-    lines.push("## Principles");
-    lines.push("");
-    for (const p of preset.constitution.principles) {
-      lines.push(`- ${p}`);
-    }
-    lines.push("");
-  }
-
-  // Conventions
-  if (preset.constitution.conventions.length > 0) {
-    lines.push("## Conventions");
-    lines.push("");
-    for (const c of preset.constitution.conventions) {
-      lines.push(`- ${c}`);
-    }
-    lines.push("");
-  }
-
-  // Custom sections
-  if (preset.constitution.customSections) {
-    for (const [title, content] of Object.entries(preset.constitution.customSections)) {
-      lines.push(`## ${title}`);
-      lines.push("");
-      lines.push(content);
-      lines.push("");
-    }
-  }
-
-  // Commands
-  lines.push("## Commands");
-  lines.push("");
-  lines.push("```bash");
-  lines.push("npm run dev          # Start development server");
-  lines.push("npm run build        # Build for production");
-  lines.push("npm run lint         # Run linter");
-  lines.push("npm test             # Run tests");
-  lines.push("```");
+  // Workflow section (from preset)
+  lines.push(generateWorkflowSection(preset));
   lines.push("");
 
-  // Agents — loomcraft-managed section
+  // Agents section
   lines.push(generateAgentsSection(agents, target));
   lines.push("");
 
-  // Skills — loomcraft-managed section
-  if (skillSlugs.length > 0) {
-    lines.push(generateSkillsSection(skillSlugs));
+  // Skills section (references to skills.json)
+  if (preset.skills.length > 0) {
+    lines.push(generateSkillsSection(preset.skills));
     lines.push("");
   }
 
-  // Orchestrator usage
-  lines.push("## How to use");
+  // Custom section (user-managed, never overwritten)
+  lines.push("<!-- loomcraft:custom:start -->");
+  lines.push("## Custom Rules");
   lines.push("");
-  lines.push(`For any task, invoke the **orchestrator** agent. It runs a pipeline (brainstorm → plan → dev → review → test) and delegates to the appropriate specialized agents. Each agent has access to its assigned skills for domain-specific guidance.`);
+  lines.push("<!-- Add your project-specific rules here. This section is never overwritten by loomcraft sync. -->");
   lines.push("");
-  lines.push(`All agents are in \`${target.dir}/${target.agentsSubdir}/\` and skills in \`${target.dir}/${target.skillsSubdir}/\`.`);
+  lines.push("<!-- loomcraft:custom:end -->");
   lines.push("");
 
   return lines.join("\n");
 }
+
+// ---------------------------------------------------------------------------
+// Workflow section
+// ---------------------------------------------------------------------------
+
+function generateWorkflowSection(preset: Preset): string {
+  const lines: string[] = [];
+  const w = preset.workflow;
+
+  lines.push("<!-- loomcraft:workflow:start -->");
+  lines.push("## Implementation Workflow");
+  lines.push("");
+
+  // Preparation
+  lines.push("### Preparation");
+  if (w.preparation.source === "linear") {
+    lines.push("1. Fetch the next logical ticket from the backlog (unblocked, highest priority)");
+    lines.push("2. Ask for confirmation before starting");
+    lines.push('3. Move ticket to "In Progress"');
+  } else if (w.preparation.source === "github-issues") {
+    lines.push("1. Fetch the next open issue (highest priority label)");
+    lines.push("2. Ask for confirmation before starting");
+    lines.push("3. Assign yourself to the issue");
+  } else {
+    lines.push("1. Ask the user what to implement next");
+    lines.push("2. Confirm scope before starting");
+  }
+  lines.push("");
+
+  // Pipeline
+  lines.push("### Pipeline");
+  lines.push("");
+  for (let i = 0; i < w.pipeline.length; i++) {
+    const step = w.pipeline[i];
+    let line = `${i + 1}. **${step.agent}**`;
+    if (step.condition) line += ` — ${step.condition}`;
+    if (step.mode) line += ` (${step.mode})`;
+    if (step.scope) line += ` [scope: ${step.scope}]`;
+    lines.push(line);
+  }
+  lines.push("");
+
+  // Verification
+  if (w.verification.length > 0) {
+    lines.push("### Verification (always run)");
+    lines.push("");
+    for (let i = 0; i < w.verification.length; i++) {
+      lines.push(`${i + 1}. **${w.verification[i]}**`);
+    }
+    lines.push("");
+  }
+
+  // Finalization
+  lines.push("### Finalization");
+  if (w.finalization.commits === "conventional") {
+    lines.push("- Commit using conventional commits (feat, fix, chore, etc.)");
+  }
+  lines.push(`- Push on branch: \`${w.finalization.branch}\``);
+  if (w.preparation.source === "linear") {
+    lines.push('- Comment a summary on the Linear ticket, move to "Done"');
+  } else if (w.preparation.source === "github-issues") {
+    lines.push("- Comment a summary on the GitHub issue, close it");
+  }
+  lines.push("- Propose the next ticket");
+  lines.push("");
+  lines.push("<!-- loomcraft:workflow:end -->");
+
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Agents section
+// ---------------------------------------------------------------------------
 
 export function generateAgentsSection(agents: AgentInfo[], target: TargetConfig): string {
   const lines: string[] = [];
@@ -97,14 +140,13 @@ export function generateAgentsSection(agents: AgentInfo[], target: TargetConfig)
   lines.push("## Agents");
   lines.push("");
 
-  const nonOrchestrator = agents.filter((a) => a.slug !== "orchestrator");
-  if (nonOrchestrator.length > 0) {
-    lines.push(`This project uses ${nonOrchestrator.length + 1} agents (including the orchestrator) in \`${target.dir}/${target.agentsSubdir}/\`. The orchestrator (\`${target.dir}/${target.orchestratorFile}\`) coordinates the development pipeline.`);
+  if (agents.length > 0) {
+    lines.push(`This project uses ${agents.length} agents in \`${target.dir}/${target.agentsSubdir}/\`. Claude Code auto-delegates based on each agent's description.`);
     lines.push("");
-    lines.push("| Agent | Role | Description |");
-    lines.push("|-------|------|-------------|");
-    for (const agent of nonOrchestrator) {
-      lines.push(`| \`${agent.slug}\` | ${agent.name} | ${agent.description} |`);
+    lines.push("| Agent | Description |");
+    lines.push("|-------|-------------|");
+    for (const agent of agents) {
+      lines.push(`| \`${agent.slug}\` | ${agent.description} |`);
     }
     lines.push("");
   }
@@ -112,91 +154,94 @@ export function generateAgentsSection(agents: AgentInfo[], target: TargetConfig)
   return lines.join("\n");
 }
 
-export function generateSkillsSection(skillSlugs: string[]): string {
+// ---------------------------------------------------------------------------
+// Skills section
+// ---------------------------------------------------------------------------
+
+export function generateSkillsSection(skills: string[]): string {
   const lines: string[] = [];
   lines.push("<!-- loomcraft:skills:start -->");
   lines.push("## Skills");
   lines.push("");
-  lines.push("Installed skills providing domain-specific conventions and patterns:");
+  lines.push("Installed via `skills.json` (skills.sh). Auto-detected by trigger phrases.");
   lines.push("");
-  for (const slug of skillSlugs) {
-    lines.push(`- \`${slug}\``);
+  for (const skill of skills) {
+    // Show just the skill name from the full ref
+    const name = skill.split("/").pop() || skill;
+    lines.push(`- \`${name}\``);
   }
   lines.push("");
   lines.push("<!-- loomcraft:skills:end -->");
   return lines.join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// Merge (preserves user content outside loomcraft-managed sections)
+// ---------------------------------------------------------------------------
+
 export function mergeContextFile(
   existingContent: string,
   agents: AgentInfo[],
   target: TargetConfig,
-  skillSlugs: string[]
+  skills: string[],
+  stackSummary?: string
 ): string {
   let result = existingContent;
 
-  // Replace or append agents section
+  // Replace stack section if provided
+  if (stackSummary) {
+    const stackSection = [
+      "<!-- loomcraft:stack:start -->",
+      "## Stack",
+      "",
+      stackSummary,
+      "",
+      "<!-- loomcraft:stack:end -->",
+    ].join("\n");
+    const stackRegex = /<!-- loomcraft:stack:start -->[\s\S]*?<!-- loomcraft:stack:end -->/;
+    if (stackRegex.test(result)) {
+      result = result.replace(stackRegex, stackSection);
+    }
+  }
+
+  // Replace agents section
   const agentsSection = generateAgentsSection(agents, target);
   const agentsRegex = /<!-- loomcraft:agents:start -->[\s\S]*?<!-- loomcraft:agents:end -->/;
-
   if (agentsRegex.test(result)) {
     result = result.replace(agentsRegex, agentsSection);
   } else {
     result = result.trimEnd() + "\n\n" + agentsSection + "\n";
   }
 
-  // Replace or append skills section
+  // Replace skills section
   const skillsRegex = /<!-- loomcraft:skills:start -->[\s\S]*?<!-- loomcraft:skills:end -->/;
-
-  if (skillSlugs.length > 0) {
-    const skillsSection = generateSkillsSection(skillSlugs);
+  if (skills.length > 0) {
+    const skillsSection = generateSkillsSection(skills);
     if (skillsRegex.test(result)) {
       result = result.replace(skillsRegex, skillsSection);
     } else {
       result = result.trimEnd() + "\n\n" + skillsSection + "\n";
     }
-  } else {
-    // No skills — remove existing skills section if present
-    if (skillsRegex.test(result)) {
-      result = result.replace(skillsRegex, "").replace(/\n{3,}/g, "\n\n");
-    }
+  } else if (skillsRegex.test(result)) {
+    result = result.replace(skillsRegex, "").replace(/\n{3,}/g, "\n\n");
+  }
+
+  // Replace workflow section if present (don't add if not already there)
+  const workflowRegex = /<!-- loomcraft:workflow:start -->[\s\S]*?<!-- loomcraft:workflow:end -->/;
+  // Workflow is only replaced on full init, not on sync — so we leave it alone here
+
+  // Ensure custom section exists
+  const customRegex = /<!-- loomcraft:custom:start -->/;
+  if (!customRegex.test(result)) {
+    result = result.trimEnd() + "\n\n" + [
+      "<!-- loomcraft:custom:start -->",
+      "## Custom Rules",
+      "",
+      "<!-- Add your project-specific rules here. This section is never overwritten by loomcraft sync. -->",
+      "",
+      "<!-- loomcraft:custom:end -->",
+    ].join("\n") + "\n";
   }
 
   return result;
-}
-
-export function generateOrchestrator(
-  templateContent: string,
-  agents: AgentWithSkills[],
-  presetSkills: string[]
-): string {
-  const { data: frontmatter, content } = matter(templateContent);
-
-  // Build delegation rules
-  const rules: string[] = [];
-  const delegatesTo: string[] = [];
-
-  for (const agent of agents) {
-    if (agent.slug === "orchestrator") continue;
-
-    delegatesTo.push(agent.slug);
-
-    // Filter agent skills to only those present in the preset
-    const relevantSkills = agent.skills.filter((s) => presetSkills.includes(s));
-
-    let line = `- **${agent.slug}**: ${agent.description}`;
-    if (relevantSkills.length > 0) {
-      line += `. Skills: ${relevantSkills.join(", ")}`;
-    }
-    rules.push(line);
-  }
-
-  // Rebuild frontmatter (keep original fields only — delegates-to is not a recognized field)
-  const newFrontmatter = { ...frontmatter };
-
-  // Replace placeholder in content
-  const newContent = content.replace("{{DELEGATION_RULES}}", rules.join("\n"));
-
-  // Reassemble with gray-matter
-  return matter.stringify(newContent, newFrontmatter);
 }

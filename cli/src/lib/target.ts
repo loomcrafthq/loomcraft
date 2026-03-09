@@ -4,7 +4,6 @@ export interface TargetConfig {
   dir: string;
   agentsSubdir: string;
   skillsSubdir: string;
-  orchestratorFile: string;
   contextFile: string;
 }
 
@@ -17,7 +16,6 @@ export const BUILTIN_TARGETS: Record<string, TargetConfig> = {
     dir: ".claude",
     agentsSubdir: "agents",
     skillsSubdir: "skills",
-    orchestratorFile: "agents/orchestrator/AGENT.md",
     contextFile: "CLAUDE.md",
   },
   cursor: {
@@ -26,7 +24,6 @@ export const BUILTIN_TARGETS: Record<string, TargetConfig> = {
     dir: ".cursor",
     agentsSubdir: "agents",
     skillsSubdir: "skills",
-    orchestratorFile: "agents/orchestrator/AGENT.md",
     contextFile: ".cursorrules",
   },
 };
@@ -74,7 +71,6 @@ export function resolveTarget(
       dir: customDir,
       agentsSubdir: "agents",
       skillsSubdir: "skills",
-      orchestratorFile: "orchestrator.md",
       contextFile: customContextFile,
     };
   }

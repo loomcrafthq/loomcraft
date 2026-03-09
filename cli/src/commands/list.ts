@@ -1,6 +1,7 @@
 import pc from "picocolors";
-import { listAgents, listSkills, listPresets } from "../lib/library.js";
+import { listAgents, listPresets } from "../lib/library.js";
 import { listLocalResources } from "../lib/local-library.js";
+import { readSkillsJson } from "../lib/writer.js";
 
 function truncate(str: string, max: number): string {
   if (str.length <= max) return str;
@@ -31,17 +32,17 @@ export async function listCommand(type?: string): Promise<void> {
     }
 
     if (!type || type === "skills") {
-      const skills = await listSkills();
-      console.log(pc.bold(pc.cyan("\n  Skills")));
+      // Skills now come from skills.json (installed via skills.sh)
+      const skillsJson = readSkillsJson();
+      console.log(pc.bold(pc.cyan("\n  Skills (from skills.json)")));
       console.log(pc.dim("  " + "─".repeat(60)));
-      if (skills.length === 0) {
-        console.log(pc.dim("  No skills found."));
-      }
-      for (const s of skills) {
-        bundledSlugs.add(`skill:${s.slug}`);
-        console.log(
-          `  ${padEnd(pc.green(s.slug), 30)} ${padEnd(s.name, 25)} ${pc.dim(truncate(s.description, 40))}`
-        );
+      if (!skillsJson || skillsJson.skills.length === 0) {
+        console.log(pc.dim("  No skills.json found. Run \"loomcraft init\" first."));
+      } else {
+        for (const ref of skillsJson.skills) {
+          const name = ref.split("/").pop() || ref;
+          console.log(`  ${padEnd(pc.green(name), 30)} ${pc.dim(ref)}`);
+        }
       }
     }
 

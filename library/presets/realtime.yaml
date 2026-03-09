@@ -1,49 +1,41 @@
 name: Realtime
-description: Real-time application with WebSockets, presence, optimistic UI, and conflict resolution.
+description: Real-time application with WebSocket/SSE, live data sync, and concurrency testing.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
-  - frontend
-  - backend
   - database
-  - tests
+  - backend
+  - frontend
+  - ux-ui
+  - tester
   - review-qa
-  - performance
   - security
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - realtime-patterns
-  - supabase-patterns
-  - nextjs-conventions
-  - testing-patterns
-  - tailwind-patterns
-  - shadcn-ui
-  - api-design
-  - env-validation
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Real-time is the default — users see changes immediately
-    - Optimistic UI — update locally first, reconcile with server later
-    - Handle disconnections — always implement reconnection with backoff
-    - Conflict resolution — define a strategy before building
-  conventions:
-    - Use Supabase Realtime for database-driven updates
-    - Implement presence tracking for collaborative features
-    - Debounce high-frequency events (typing indicators, cursor positions)
-    - Clean up subscriptions on component unmount
-    - Show connection status to users
-context:
-  projectDescription: >
-    This is a real-time application (chat, collaboration, or live updates). The orchestrator
-    coordinates real-time feature brainstorming, architecture planning, WebSocket/SSE development,
-    and testing to deliver a responsive, resilient real-time experience.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/linear-conventions
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/testing-patterns
+  - loomcraft/skills/realtime-patterns
+workflow:
+  preparation:
+    source: linear
+  pipeline:
+    - agent: database
+      condition: "if migrations needed"
+    - agent: tester
+      mode: tdd
+      scope: "database + backend"
+    - agent: backend
+    - agent: ux-ui
+      condition: "if UI needed"
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+    - security
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

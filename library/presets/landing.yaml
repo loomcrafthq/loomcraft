@@ -1,45 +1,30 @@
 name: Landing
-description: Marketing landing page with SEO, conversion optimization, and perfect Lighthouse scores.
+description: Marketing landing page with SEO, conversion optimization, and responsive design.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
   - frontend
   - ux-ui
-  - marketing
-  - performance
+  - tester
   - review-qa
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - nextjs-conventions
-  - tailwind-patterns
-  - shadcn-ui
-  - hero-copywriting
-  - seo-optimization
-  - ui-ux-guidelines
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Conversion-first — every section must guide visitors toward a clear CTA
-    - Performance is UX — aim for perfect Lighthouse scores
-    - Mobile-first responsive — design for small screens, enhance for large
-    - Accessible by default — semantic HTML, ARIA, keyboard navigation
-  conventions:
-    - Use Server Components and static generation for maximum performance
-    - Optimize all images with next/image and proper srcset
-    - Implement structured data (JSON-LD) for SEO
-    - Use CSS animations and transitions over JS-based animation libraries
-    - Ensure all interactive elements have visible focus states
-context:
-  projectDescription: >
-    This is a landing page / marketing site. The orchestrator coordinates brainstorming for messaging,
-    planning content structure, frontend development, and performance audits to deliver a fast,
-    conversion-optimized page.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/seo-optimization
+  - loomcraft/skills/ui-ux-guidelines
+  - loomcraft/skills/hero-copywriting
+workflow:
+  preparation:
+    source: manual
+  pipeline:
+    - agent: ux-ui
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

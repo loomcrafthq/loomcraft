@@ -1,48 +1,38 @@
 name: Blog
-description: Blog or CMS with MDX content, SEO optimization, admin panel, and draft/publish workflow.
+description: Blog and CMS with content management, SEO optimization, and responsive design.
 agents:
-  - orchestrator
-  - brainstormer
-  - planner
-  - frontend
-  - backend
   - database
+  - backend
+  - frontend
   - ux-ui
-  - marketing
+  - tester
   - review-qa
 skills:
-  - brainstorming
-  - task-planning
-  - code-review
-  - project-bootstrap
-  - cms-patterns
-  - seo-optimization
-  - nextjs-conventions
-  - tailwind-patterns
-  - shadcn-ui
-  - drizzle-patterns
-  - hero-copywriting
-  - ui-ux-guidelines
-pipeline:
-  - brainstorm
-  - plan
-  - dev
-  - review
-  - test
-constitution:
-  principles:
-    - Content is king — optimize the writing and publishing experience
-    - SEO by default — every page must be search-engine friendly
-    - Performance — static generation for published content
-    - Accessible — semantic HTML, proper heading hierarchy, alt text
-  conventions:
-    - Use MDX for rich content with embedded components
-    - Implement draft/publish workflow with status transitions
-    - Generate static pages for published content with generateStaticParams
-    - Use structured data (JSON-LD) for articles
-    - Optimize images with next/image and responsive srcsets
-context:
-  projectDescription: >
-    This is a blog or content management system. The orchestrator coordinates content model design,
-    MDX integration, SEO optimization, and admin panel development to deliver a fast, SEO-friendly
-    publishing platform.
+  - loomcraft/skills/brainstorm
+  - loomcraft/skills/plan
+  - loomcraft/skills/commit-conventions
+  - loomcraft/skills/code-review
+  - loomcraft/skills/seo-optimization
+  - loomcraft/skills/cms-patterns
+workflow:
+  preparation:
+    source: manual
+  pipeline:
+    - agent: database
+      condition: "if migrations needed"
+    - agent: tester
+      mode: tdd
+      scope: "database + backend"
+    - agent: backend
+    - agent: ux-ui
+      condition: "if UI needed"
+    - agent: frontend
+    - agent: tester
+      mode: test-after
+      scope: "frontend"
+  verification:
+    - review-qa
+    - tester
+  finalization:
+    commits: conventional
+    branch: "feat/<ticket-id>-<description>"

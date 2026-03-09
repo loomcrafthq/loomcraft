@@ -1,13 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { TargetConfig } from "./target.js";
-import type { SkillFile } from "./library.js";
 import { mergeContextFile, type AgentInfo } from "./generator.js";
-import { sanitizeRelativePath } from "./security.js";
 
 function ensureDir(dirPath: string): void {
   fs.mkdirSync(dirPath, { recursive: true });
 }
+
+// ---------------------------------------------------------------------------
+// Agents
+// ---------------------------------------------------------------------------
 
 export function writeAgent(target: TargetConfig, slug: string, content: string, cwd = process.cwd()): string {
   const dir = path.join(cwd, target.dir, target.agentsSubdir, slug);
@@ -17,48 +19,60 @@ export function writeAgent(target: TargetConfig, slug: string, content: string, 
   return filePath;
 }
 
-export function writeSkill(target: TargetConfig, slug: string, content: string, cwd = process.cwd()): string {
-  const dir = path.join(cwd, target.dir, target.skillsSubdir, slug);
-  ensureDir(dir);
-  const filePath = path.join(dir, "SKILL.md");
-  fs.writeFileSync(filePath, content, "utf-8");
+// ---------------------------------------------------------------------------
+// skills.json
+// ---------------------------------------------------------------------------
+
+export interface SkillsJson {
+  name: string;
+  version: string;
+  description: string;
+  skills: string[];
+}
+
+export function writeSkillsJson(skillsJson: SkillsJson, cwd = process.cwd()): string {
+  const filePath = path.join(cwd, "skills.json");
+  fs.writeFileSync(filePath, JSON.stringify(skillsJson, null, 2) + "\n", "utf-8");
   return filePath;
 }
 
-export function writeSkillDir(
-  target: TargetConfig,
-  slug: string,
-  files: SkillFile[],
-  cwd = process.cwd()
-): string {
-  const dir = path.join(cwd, target.dir, target.skillsSubdir, slug);
-  for (const file of files) {
-    const safePath = sanitizeRelativePath(file.relativePath);
-    const filePath = path.join(dir, safePath);
-    ensureDir(path.dirname(filePath));
-    fs.writeFileSync(filePath, file.content, "utf-8");
+export function readSkillsJson(cwd = process.cwd()): SkillsJson | null {
+  const filePath = path.join(cwd, "skills.json");
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(raw) as SkillsJson;
+  } catch {
+    return null;
   }
-  return dir;
 }
 
-export function writeOrchestrator(target: TargetConfig, content: string, cwd = process.cwd()): string {
-  const filePath = path.join(cwd, target.dir, target.orchestratorFile);
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, content, "utf-8");
-
-  // Clean up legacy orchestrator.md at the old location (directly in .claude/)
-  const legacyPath = path.join(cwd, target.dir, "orchestrator.md");
-  if (legacyPath !== filePath && fs.existsSync(legacyPath)) {
-    fs.unlinkSync(legacyPath);
+export function addSkillToJson(skillRef: string, cwd = process.cwd()): SkillsJson {
+  let skillsJson = readSkillsJson(cwd);
+  if (!skillsJson) {
+    skillsJson = {
+      name: path.basename(cwd),
+      version: "1.0.0",
+      description: "",
+      skills: [],
+    };
   }
-
-  return filePath;
+  if (!skillsJson.skills.includes(skillRef)) {
+    skillsJson.skills.push(skillRef);
+  }
+  writeSkillsJson(skillsJson, cwd);
+  return skillsJson;
 }
+
+// ---------------------------------------------------------------------------
+// Context file (CLAUDE.md / .cursorrules)
+// ---------------------------------------------------------------------------
 
 export interface WriteContextOptions {
   merge?: boolean;
   agents?: AgentInfo[];
-  skillSlugs?: string[];
+  skills?: string[];
+  stackSummary?: string;
 }
 
 export function writeContextFile(
@@ -71,7 +85,13 @@ export function writeContextFile(
 
   if (options.merge && fs.existsSync(filePath) && options.agents) {
     const existing = fs.readFileSync(filePath, "utf-8");
-    const merged = mergeContextFile(existing, options.agents, target, options.skillSlugs ?? []);
+    const merged = mergeContextFile(
+      existing,
+      options.agents,
+      target,
+      options.skills ?? [],
+      options.stackSummary
+    );
     fs.writeFileSync(filePath, merged, "utf-8");
   } else {
     fs.writeFileSync(filePath, content, "utf-8");

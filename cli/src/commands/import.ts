@@ -1,20 +1,17 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { detectTargets, scanTarget, generatePresetYaml } from "../lib/scanner.js";
-import type { ScanResult, ScannedAgent, ScannedSkill } from "../lib/scanner.js";
-import { listAgents, listSkills } from "../lib/library.js";
+import type { ScannedAgent } from "../lib/scanner.js";
+import { listAgents } from "../lib/library.js";
 import {
   getLocalAgent,
-  getLocalSkillWithFiles,
   saveLocalAgent,
-  saveLocalSkill,
   saveLocalPreset,
 } from "../lib/local-library.js";
 
 type DedupStatus = "new" | "duplicate-bundled" | "duplicate-local";
 
 interface DedupItem {
-  type: "agent" | "skill";
   slug: string;
   name: string;
   status: DedupStatus;
@@ -70,12 +67,12 @@ export async function importCommand(
     if (!silent) p.intro(pc.bold(`Scanning ${pc.cyan(selectedTarget)} in ${pc.dim(dir)}`));
     const result = scanTarget(dir, selectedTarget);
 
-    if (result.agents.length === 0 && result.skills.length === 0) {
+    if (result.agents.length === 0) {
       if (silent) {
         console.log(JSON.stringify({ ...result, dedup: [] }, null, 2));
         return;
       }
-      p.log.warn("No agents or skills found to import.");
+      p.log.warn("No agents found to import.");
       if (result.skipped.length > 0) {
         p.log.info(pc.dim("Skipped:"));
         for (const s of result.skipped) {
@@ -86,12 +83,8 @@ export async function importCommand(
     }
 
     // 3. Dedup vs bundled
-    const [bundledAgents, bundledSkills] = await Promise.all([
-      listAgents(),
-      listSkills(),
-    ]);
+    const bundledAgents = await listAgents();
     const bundledAgentSlugs = new Set(bundledAgents.map((a) => a.slug));
-    const bundledSkillSlugs = new Set(bundledSkills.map((s) => s.slug));
 
     // 4. Dedup vs local
     const items: DedupItem[] = [];
@@ -103,25 +96,14 @@ export async function importCommand(
       } else if (getLocalAgent(agent.slug)) {
         status = "duplicate-local";
       }
-      items.push({ type: "agent", slug: agent.slug, name: agent.name, status });
+      items.push({ slug: agent.slug, name: agent.name, status });
     }
 
-    for (const skill of result.skills) {
-      let status: DedupStatus = "new";
-      if (bundledSkillSlugs.has(skill.slug)) {
-        status = "duplicate-bundled";
-      } else if (getLocalSkillWithFiles(skill.slug)) {
-        status = "duplicate-local";
-      }
-      items.push({ type: "skill", slug: skill.slug, name: skill.name, status });
-    }
-
-    // 5. --json → output enriched JSON (before any display)
+    // 5. --json → output enriched JSON
     if (opts.json) {
       const enriched = {
         ...result,
         dedup: items.map((i) => ({
-          type: i.type,
           slug: i.slug,
           name: i.name,
           status: i.status,
@@ -136,13 +118,12 @@ export async function importCommand(
     const dupCount = items.length - newCount;
 
     p.log.info(
-      `Found ${pc.bold(String(result.agents.length))} agents, ${pc.bold(String(result.skills.length))} skills` +
+      `Found ${pc.bold(String(result.agents.length))} agents` +
         (dupCount > 0 ? ` (${pc.yellow(String(dupCount) + " duplicates")})` : "")
     );
 
     for (const item of items) {
-      const typeTag = item.type === "agent" ? pc.cyan("[agent]") : pc.magenta("[skill]");
-      p.log.info(`  ${typeTag} ${pc.bold(item.slug)} — ${statusLabel(item.status)}`);
+      p.log.info(`  ${pc.cyan("[agent]")} ${pc.bold(item.slug)} — ${statusLabel(item.status)}`);
     }
 
     if (result.skipped.length > 0) {
@@ -167,10 +148,10 @@ export async function importCommand(
     }
 
     const selected = await p.multiselect({
-      message: "Select items to import into your local library:",
+      message: "Select agents to import into your local library:",
       options: importable.map((item) => ({
         value: item.slug,
-        label: `${item.type === "agent" ? "[agent]" : "[skill]"} ${item.slug}`,
+        label: `[agent] ${item.slug}`,
         hint: item.status === "duplicate-local" ? "will overwrite" : undefined,
       })),
       initialValues: importable
@@ -185,27 +166,18 @@ export async function importCommand(
 
     const selectedSlugs = new Set(selected as string[]);
 
-    // 9. Save selected items
+    // 9. Save selected agents
     const agentMap = new Map(result.agents.map((a) => [a.slug, a]));
-    const skillMap = new Map(result.skills.map((s) => [s.slug, s]));
-
     let savedCount = 0;
 
     for (const item of importable) {
       if (!selectedSlugs.has(item.slug)) continue;
-
-      if (item.type === "agent") {
-        const agent = agentMap.get(item.slug)!;
-        saveLocalAgent(item.slug, agent.content);
-        savedCount++;
-      } else {
-        const skill = skillMap.get(item.slug)!;
-        saveLocalSkill(item.slug, skill.files);
-        savedCount++;
-      }
+      const agent = agentMap.get(item.slug)!;
+      saveLocalAgent(item.slug, agent.content);
+      savedCount++;
     }
 
-    p.log.success(`Saved ${pc.bold(String(savedCount))} items to ~/.loomcraft/library/`);
+    p.log.success(`Saved ${pc.bold(String(savedCount))} agents to ~/.loomcraft/library/`);
 
     // 10. Preset generation
     const generatePreset = await p.confirm({
@@ -215,18 +187,13 @@ export async function importCommand(
 
     if (!p.isCancel(generatePreset) && generatePreset) {
       const selectedAgents = result.agents.filter((a) => selectedSlugs.has(a.slug));
-      const selectedSkills = result.skills.filter((s) => selectedSlugs.has(s.slug));
 
       const presetSlug = result.projectName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
 
-      const presetYaml = generatePresetYaml(
-        result.projectName,
-        selectedAgents,
-        selectedSkills
-      );
+      const presetYaml = generatePresetYaml(result.projectName, selectedAgents);
       saveLocalPreset(presetSlug, presetYaml);
       p.log.success(`Preset saved as ${pc.green(presetSlug)}`);
     }
