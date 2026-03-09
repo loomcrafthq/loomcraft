@@ -1,6 +1,6 @@
 {
   "name": "@loomcraft/cli",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Preset manager for AI agents and skills — fetch from GitHub, scaffold your project",
   "type": "module",
   "license": "MIT",
