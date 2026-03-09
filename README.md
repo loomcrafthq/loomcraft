@@ -1,76 +1,59 @@
 # @loomcraft/cli
 
-Multi-agent development pipeline for Claude Code and Cursor. **13 agents**, **33 skills**, **10 presets** — from brainstorm to production.
+AI workflow preset manager — **7 universal agents**, **skills.sh integration**, **10 presets**.
 
-Loomcraft scaffolds a complete AI development workflow into your project. An orchestrator agent runs a pipeline (brainstorm → plan → dev → review → test), delegating to specialized agents that each carry domain-specific skills.
+Loomcraft scaffolds production-ready presets into your project. Each preset bundles 7 stack-agnostic agents, skills from the [skills.sh](https://skills.sh) ecosystem, and a workflow pipeline with TDD hybrid patterns.
 
 ## Quick start
 
 ```bash
-# Interactive — pick preset, agents, and skills
+# Interactive — pick a preset
 npx @loomcraft/cli init
 
 # One-liner with a preset
-npx @loomcraft/cli init saas --claude
-npx @loomcraft/cli init landing --cursor
+npx @loomcraft/cli init saas
+npx @loomcraft/cli init api
 ```
-
-> **Optional global install:** `npm i -g @loomcraft/cli` then use `loomcraft` directly.
 
 ## Commands
 
 ### `loomcraft init [preset]`
 
-Scaffold a project with agents, skills, and a context file.
+Scaffold a preset with agents, skills.json, and a context file.
 
 ```bash
-loomcraft init                           # interactive wizard
-loomcraft init saas --claude             # Claude Code target
-loomcraft init api --cursor              # Cursor target
-loomcraft init saas --remove-agent marketing --add-skill prisma-patterns
+loomcraft init                    # interactive wizard
+loomcraft init saas               # scaffold the SaaS preset
+loomcraft init landing            # scaffold the landing preset
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--claude` | Target Claude Code (`.claude/` + `CLAUDE.md`) |
-| `--cursor` | Target Cursor (`.cursor/` + `.cursorrules`) |
 | `--add-agent <slugs...>` | Add extra agents to the preset |
 | `--remove-agent <slugs...>` | Remove agents from the preset |
-| `--add-skill <slugs...>` | Add extra skills |
-| `--remove-skill <slugs...>` | Remove skills |
 | `--overwrite` | Overwrite existing context file instead of merging |
 
-**Context file merge:** When the context file (`CLAUDE.md` / `.cursorrules`) already exists, `init` preserves your custom content and only updates the Loomcraft-managed sections (agents and skills). In interactive mode, you'll be prompted to choose merge or overwrite. In non-interactive mode, merge is the default — use `--overwrite` to replace the entire file.
+**Context file merge:** When `CLAUDE.md` already exists, `init` preserves your custom content and only updates the Loomcraft-managed sections. Use `--overwrite` to replace the entire file.
 
 ### `loomcraft list [type]`
 
 ```bash
 loomcraft list           # everything
 loomcraft list agents    # agents only
-loomcraft list skills    # skills only
 loomcraft list presets   # presets only
 ```
 
-### `loomcraft add <type> <slug>`
+### `loomcraft import`
 
-Add a single agent or skill to an existing project. Automatically regenerates the orchestrator and updates the context file.
-
-```bash
-loomcraft add agent devops
-loomcraft add skill ai-patterns
-```
-
-### `loomcraft sync`
-
-Regenerate the orchestrator and update the context file's agents/skills sections based on currently installed agents and skills. Useful after manual changes.
+Import an existing project setup into Loomcraft format.
 
 ```bash
-loomcraft sync
+loomcraft import
 ```
 
 ### `loomcraft marketplace`
 
-Browse and install community-contributed resources.
+Browse and install community-contributed presets.
 
 ```bash
 loomcraft marketplace search              # list all
@@ -82,144 +65,117 @@ Alias: `lc mp search`
 
 ## What's generated
 
-Running `loomcraft init saas --claude` creates:
+Running `loomcraft init saas` creates:
 
 ```
 .claude/
   agents/
-    orchestrator/AGENT.md    # pipeline coordinator
-    brainstormer/AGENT.md    # requirement exploration
-    planner/AGENT.md         # task decomposition
-    frontend/AGENT.md        # React/Next.js
-    backend/AGENT.md         # API, auth, data
-    database/AGENT.md        # schemas, migrations
-    ...8 more agents
-  skills/
-    nextjs-conventions/SKILL.md
-    tailwind-patterns/SKILL.md
-    api-design/SKILL.md
-    ...21 more skills
-CLAUDE.md                    # project context (auto-read by Claude Code)
+    database.md          # schema design, migrations, queries
+    backend.md           # APIs, auth, business logic
+    frontend.md          # components, state, accessibility
+    ux-ui.md             # design system, usability, responsive
+    tester.md            # unit, integration, e2e, TDD
+    review-qa.md         # code review, quality assurance
+    security.md          # OWASP Top 10, audit, hardening
+  CLAUDE.md              # project context (auto-read by Claude Code)
+skills.json              # skills.sh references
 ```
 
-Claude Code discovers agents in `.claude/agents/` and skills in `.claude/skills/` automatically. The `CLAUDE.md` file provides project-level context and directs Claude to use the orchestrator for any task.
+Claude Code discovers agents in `.claude/agents/` automatically. The `skills.json` file references external skills from the [skills.sh](https://skills.sh) ecosystem.
 
-## Pipeline
+## Agents (7)
 
-The orchestrator runs a 5-phase pipeline for every feature:
-
-```
-1. BRAINSTORM → 2. PLAN → 3. DEV → 4. REVIEW → 5. TEST
-       ↑                                              |
-       └──────── iterate if review/tests fail ────────┘
-```
-
-1. **Brainstorm** — The brainstormer agent explores requirements via Socratic questioning
-2. **Plan** — The planner decomposes the brief into atomic tasks with dependency waves
-3. **Dev** — Specialized agents (frontend, backend, database, etc.) execute tasks in parallel
-4. **Review** — The review-qa agent checks correctness, security, and code quality
-5. **Test** — The tests agent writes and runs tests; failures loop back for fixes
-
-## Agents (13)
-
-### Workflow agents
+All agents are **stack-agnostic**. They read your project's `CLAUDE.md` to adapt to whatever framework, language, or tooling you use.
 
 | Agent | Role |
 |-------|------|
-| `orchestrator` | Runs the dev pipeline, delegates to specialists |
-| `brainstormer` | Socratic questioning, assumption surfacing, briefs |
-| `planner` | Atomic task decomposition, dependency waves |
+| `database` | Schema design, migrations, query optimization, data integrity |
+| `backend` | API design, business logic, auth, clean architecture |
+| `frontend` | UI components, state management, accessibility (WCAG 2.1 AA), performance |
+| `ux-ui` | Design system, usability heuristics, responsive design, animation |
+| `tester` | Unit/integration/e2e tests, TDD, Arrange-Act-Assert |
+| `review-qa` | Code review, quality audit, security and performance checks |
+| `security` | OWASP Top 10, vulnerability audit, secure coding patterns |
 
-### Domain agents
+## Skills (skills.sh)
 
-| Agent | Role |
-|-------|------|
-| `frontend` | React/Next.js components, pages, layouts, client-side |
-| `backend` | API routes, server actions, auth, data layer |
-| `database` | Schemas, migrations, query optimization |
-| `ux-ui` | Design system, accessibility, responsive, animation |
-| `marketing` | Copywriting, SEO, conversion |
-| `security` | OWASP Top 10, audit, hardening |
-| `performance` | Core Web Vitals, bundle size, rendering |
-| `tests` | Unit, integration, E2E, TDD |
+Skills are external packages from the [skills.sh](https://skills.sh) ecosystem. Each preset references the skills it needs in `skills.json`.
 
-### Support agents
+### Core skills (included in all presets)
 
-| Agent | Role |
-|-------|------|
-| `review-qa` | Code review, quality, constructive feedback |
-| `devops` | CI/CD, deployment, monitoring, infra |
+| Skill | Source |
+|-------|--------|
+| Brainstorming | `obra/superpowers/brainstorming` |
+| Writing Plans | `obra/superpowers/writing-plans` |
+| Executing Plans | `obra/superpowers/executing-plans` |
+| Systematic Debugging | `obra/superpowers/systematic-debugging` |
+| Code Review | `obra/superpowers/requesting-code-review` |
+| Receiving Review | `obra/superpowers/receiving-code-review` |
+| Conventional Commits | `github/awesome-copilot/conventional-commit` |
+| Ticket Craft | `loomcrafthq/skills/ticket-craft` |
+| Testing Patterns | `loomcrafthq/skills/testing-patterns` |
 
-## Skills (33)
+### Ecosystem skills (per preset)
 
-### Workflow skills
+| Skill | Source |
+|-------|--------|
+| TDD | `obra/superpowers/test-driven-development` |
+| Frontend Design | `anthropics/skills/frontend-design` |
+| Web App Testing | `anthropics/skills/webapp-testing` |
+| Web Design | `vercel-labs/web-design-guidelines` |
+| React Best Practices | `vercel-labs/react-best-practices` |
+| Next.js Best Practices | `vercel-labs/next-best-practices` |
+| React Native | `vercel-labs/react-native-skills` |
+| Better Auth | `better-auth/skills` |
+| Supabase | `supabase/agent-skills` |
 
-| Skill | Description |
-|-------|-------------|
-| `brainstorming` | Socratic questioning, brief templates |
-| `task-planning` | Atomic decomposition, wave-based execution |
-| `code-review` | Review checklist, severity classification |
-| `tdd-workflow` | RED-GREEN-REFACTOR cycle |
-| `project-bootstrap` | Stack detection, context file enrichment |
+## Workflow Pipeline
 
-### Domain skills
+Each preset defines a workflow with 4 phases:
 
-| Skill | Description |
-|-------|-------------|
-| `nextjs-conventions` | Next.js 15+ / React 19 / App Router patterns |
-| `tailwind-patterns` | Tailwind CSS utilities and responsive design |
-| `shadcn-ui` | ShadCN UI components, forms, data tables |
-| `api-design` | REST API design, validation, error handling |
-| `supabase-patterns` | Supabase auth, RLS, storage, real-time |
-| `drizzle-patterns` | Drizzle ORM schemas, migrations, queries |
-| `prisma-patterns` | Prisma ORM schemas, relations, seeding |
-| `layered-architecture` | Presentation → Facade → Service → DAL |
-| `server-actions-patterns` | Safe Server Actions with wrappers |
-| `form-validation` | Zod dual validation (client + server) |
-| `auth-rbac` | CASL authorization with role hierarchy |
-| `better-auth-patterns` | Better Auth setup with organizations |
-| `i18n-patterns` | next-intl internationalization patterns |
-| `testing-patterns` | Vitest role-based testing strategy |
-| `tdd-workflow` | RED-GREEN-REFACTOR cycle |
-| `env-validation` | Zod environment variable validation |
-| `react-query-patterns` | TanStack React Query data fetching |
-| `table-pagination` | Server-side pagination with URL state |
-| `resend-email` | Resend + React Email transactional emails |
-| `stripe-integration` | Stripe checkout, subscriptions, webhooks |
-| `ui-ux-guidelines` | Accessibility, interaction, typography |
-| `hero-copywriting` | High-converting hero section copy |
-| `seo-optimization` | Meta tags, JSON-LD, Core Web Vitals |
-| `ai-patterns` | LLM integration, RAG, streaming, tool use |
-| `realtime-patterns` | WebSockets, SSE, presence, optimistic UI |
-| `cms-patterns` | Content modeling, MDX, draft/publish |
-| `chrome-extension-patterns` | Manifest V3, content scripts |
-| `cli-development` | Node.js CLI with Commander.js |
-| `react-native-patterns` | React Native / Expo mobile patterns |
+```
+1. PREPARATION → 2. PIPELINE → 3. VERIFICATION → 4. FINALIZATION
+```
+
+### Example: TDD Hybrid Pipeline
+
+```yaml
+workflow:
+  preparation:
+    source: linear          # ticket source (linear, github-issues, manual)
+  pipeline:
+    - agent: database
+    - agent: tester
+      mode: tdd             # write tests first (red)
+    - agent: backend
+    - agent: ux-ui
+    - agent: frontend
+    - agent: tester
+      mode: test-after      # write tests after implementation
+  verification:
+    - review-qa
+    - security
+  finalization:
+    commits: conventional
+    branch: feat/{{ticket}}
+```
 
 ## Presets (10)
 
-| Preset | Agents | Skills | Use case |
-|--------|--------|--------|----------|
-| `saas` | 13 | 24 | Full-stack SaaS with auth, billing, testing |
-| `api` | 10 | 12 | Backend API service |
-| `landing` | 8 | 10 | Marketing landing page |
-| `mobile` | 10 | 10 | React Native / Expo mobile app |
-| `ecommerce` | 13 | 17 | Online store with Stripe |
-| `cli` | 7 | 8 | Node.js command-line tool |
-| `extension` | 8 | 9 | Chrome browser extension |
-| `ai-app` | 9 | 12 | AI-powered app (chatbot, RAG) |
-| `realtime` | 10 | 12 | Real-time app (chat, collaboration) |
-| `blog` | 9 | 12 | Blog / CMS with MDX |
+| Preset | Use case |
+|--------|----------|
+| `saas` | Full-stack SaaS with auth, billing, TDD pipeline |
+| `api` | Backend API service |
+| `landing` | Marketing landing page |
+| `mobile` | React Native / Expo mobile app |
+| `ecommerce` | Online store with Stripe |
+| `cli` | Node.js command-line tool |
+| `extension` | Chrome browser extension |
+| `ai-app` | AI-powered app (chatbot, RAG) |
+| `realtime` | Real-time app (chat, collaboration) |
+| `blog` | Blog / CMS with MDX |
 
-Every preset includes the workflow agents (orchestrator, brainstormer, planner) and workflow skills (brainstorming, task-planning, code-review, project-bootstrap).
-
-## Multi-runtime support
-
-| Runtime | Target flag | Agents dir | Context file |
-|---------|------------|------------|--------------|
-| Claude Code | `--claude` | `.claude/agents/` | `CLAUDE.md` |
-| Cursor | `--cursor` | `.cursor/agents/` | `.cursorrules` |
-| Custom | `--target custom --target-dir .mydir --context-file CONTEXT.md` | `.mydir/agents/` | `CONTEXT.md` |
+Every preset includes the 7 universal agents and core skills.sh references.
 
 ## License
 
