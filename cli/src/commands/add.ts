@@ -1,15 +1,13 @@
 import { execSync } from "node:child_process";
 import pc from "picocolors";
 import { getAgent } from "../lib/library.js";
-import { getLocalAgent } from "../lib/local-library.js";
 import { writeAgent, addSkillToJson } from "../lib/writer.js";
 import type { TargetConfig } from "../lib/target.js";
 import { syncCommand } from "./sync.js";
-import { validateSlug } from "../lib/security.js";
 
 export async function addCommand(
   type: string,
-  slug: string,
+  slugOrRef: string,
   target: TargetConfig
 ): Promise<void> {
   if (type !== "agent" && type !== "skill") {
@@ -18,41 +16,23 @@ export async function addCommand(
   }
 
   if (type === "agent") {
-    try {
-      validateSlug(slug);
-    } catch (err) {
-      console.error(pc.red(`\n  Error: ${(err as Error).message}\n`));
-      process.exit(1);
-    }
-    await addAgent(slug, target);
+    await addAgent(slugOrRef, target);
   } else {
-    await addSkill(slug);
+    await addSkill(slugOrRef);
   }
 }
 
-// --- Add agent (from bundled or local library) ---
+// --- Add agent (bundled or remote ref: org/repo/name) ---
 
-async function addAgent(slug: string, target: TargetConfig): Promise<void> {
-  let written = false;
-
+async function addAgent(slugOrRef: string, target: TargetConfig): Promise<void> {
   try {
-    const agent = await getAgent(slug);
-    const filePath = writeAgent(target, slug, agent.rawContent);
-    console.log(pc.green(`\n  ✓ Agent "${slug}" written to ${filePath}`));
-    written = true;
-  } catch {
-    // Bundled not found — try ~/.loomcraft/library/
-    const local = getLocalAgent(slug);
-    if (local) {
-      const filePath = writeAgent(target, slug, local.rawContent);
-      console.log(pc.green(`\n  ✓ Agent "${slug}" written to ${filePath} ${pc.dim("(from ~/.loomcraft/library)")}`));
-      written = true;
-    }
-  }
-
-  if (!written) {
-    console.error(pc.red(`\n  Error: agent "${slug}" not found.\n`));
-    console.log(pc.dim(`  Try: loomcraft marketplace search ${slug}\n`));
+    const agent = await getAgent(slugOrRef);
+    const filePath = writeAgent(target, agent.slug, agent.rawContent);
+    console.log(pc.green(`\n  ✓ Agent "${agent.slug}" written to ${filePath}`));
+  } catch (err) {
+    console.error(pc.red(`\n  Error: ${(err as Error).message}\n`));
+    console.log(pc.dim(`  Bundled agents: loomcraft list agents`));
+    console.log(pc.dim(`  Remote: loomcraft add agent org/repo/agent-name\n`));
     process.exit(1);
   }
 

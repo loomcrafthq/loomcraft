@@ -1,32 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { detectTargets, scanTarget, generatePresetYaml } from "../lib/scanner.js";
-import type { ScannedAgent } from "../lib/scanner.js";
 import { listAgents } from "../lib/library.js";
-import {
-  getLocalAgent,
-  saveLocalAgent,
-  saveLocalPreset,
-} from "../lib/local-library.js";
-
-type DedupStatus = "new" | "duplicate-bundled" | "duplicate-local";
-
-interface DedupItem {
-  slug: string;
-  name: string;
-  status: DedupStatus;
-}
-
-function statusLabel(status: DedupStatus): string {
-  switch (status) {
-    case "new":
-      return pc.green("new");
-    case "duplicate-bundled":
-      return pc.yellow("bundled duplicate");
-    case "duplicate-local":
-      return pc.yellow("local duplicate");
-  }
-}
 
 export async function importCommand(
   targetPath: string | undefined,
@@ -69,7 +46,7 @@ export async function importCommand(
 
     if (result.agents.length === 0) {
       if (silent) {
-        console.log(JSON.stringify({ ...result, dedup: [] }, null, 2));
+        console.log(JSON.stringify(result, null, 2));
         return;
       }
       p.log.warn("No agents found to import.");
@@ -84,46 +61,33 @@ export async function importCommand(
 
     // 3. Dedup vs bundled
     const bundledAgents = await listAgents();
-    const bundledAgentSlugs = new Set(bundledAgents.map((a) => a.slug));
+    const bundledSlugs = new Set(bundledAgents.map((a) => a.slug));
 
-    // 4. Dedup vs local
-    const items: DedupItem[] = [];
-
-    for (const agent of result.agents) {
-      let status: DedupStatus = "new";
-      if (bundledAgentSlugs.has(agent.slug)) {
-        status = "duplicate-bundled";
-      } else if (getLocalAgent(agent.slug)) {
-        status = "duplicate-local";
-      }
-      items.push({ slug: agent.slug, name: agent.name, status });
-    }
-
-    // 5. --json → output enriched JSON
+    // 4. --json → output JSON
     if (opts.json) {
       const enriched = {
         ...result,
-        dedup: items.map((i) => ({
-          slug: i.slug,
-          name: i.name,
-          status: i.status,
+        agents: result.agents.map((a) => ({
+          ...a,
+          isBundled: bundledSlugs.has(a.slug),
         })),
       };
       console.log(JSON.stringify(enriched, null, 2));
       return;
     }
 
-    // 6. Display summary
-    const newCount = items.filter((i) => i.status === "new").length;
-    const dupCount = items.length - newCount;
+    // 5. Display summary
+    const customAgents = result.agents.filter((a) => !bundledSlugs.has(a.slug));
+    const bundledCount = result.agents.length - customAgents.length;
 
     p.log.info(
       `Found ${pc.bold(String(result.agents.length))} agents` +
-        (dupCount > 0 ? ` (${pc.yellow(String(dupCount) + " duplicates")})` : "")
+        (bundledCount > 0 ? ` (${pc.dim(String(bundledCount) + " bundled")})` : "")
     );
 
-    for (const item of items) {
-      p.log.info(`  ${pc.cyan("[agent]")} ${pc.bold(item.slug)} — ${statusLabel(item.status)}`);
+    for (const agent of result.agents) {
+      const tag = bundledSlugs.has(agent.slug) ? pc.dim("bundled") : pc.green("custom");
+      p.log.info(`  ${pc.cyan(agent.slug)} — ${tag}`);
     }
 
     if (result.skipped.length > 0) {
@@ -133,70 +97,38 @@ export async function importCommand(
       }
     }
 
-    // 7. --dry-run → stop
+    // 6. --dry-run → stop
     if (opts.dryRun) {
       p.outro("Dry run complete — no files were written.");
       return;
     }
 
-    // 8. Interactive selection
-    const importable = items.filter((i) => i.status !== "duplicate-bundled");
-    if (importable.length === 0) {
-      p.log.warn("All items are bundled duplicates — nothing to import.");
+    // 7. Generate preset YAML
+    const generatePreset = await p.confirm({
+      message: "Generate a preset YAML from this setup?",
+      initialValue: true,
+    });
+
+    if (p.isCancel(generatePreset) || !generatePreset) {
       p.outro("Done.");
       return;
     }
 
-    const selected = await p.multiselect({
-      message: "Select agents to import into your local library:",
-      options: importable.map((item) => ({
-        value: item.slug,
-        label: `[agent] ${item.slug}`,
-        hint: item.status === "duplicate-local" ? "will overwrite" : undefined,
-      })),
-      initialValues: importable
-        .filter((i) => i.status === "new")
-        .map((i) => i.slug),
-    });
+    const presetSlug = result.projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
 
-    if (p.isCancel(selected)) {
-      p.cancel("Import cancelled.");
-      process.exit(0);
-    }
+    const presetYaml = generatePresetYaml(result.projectName, result.agents);
+    const outputPath = path.join(dir, `${presetSlug}.preset.yaml`);
+    fs.writeFileSync(outputPath, presetYaml, "utf-8");
 
-    const selectedSlugs = new Set(selected as string[]);
-
-    // 9. Save selected agents
-    const agentMap = new Map(result.agents.map((a) => [a.slug, a]));
-    let savedCount = 0;
-
-    for (const item of importable) {
-      if (!selectedSlugs.has(item.slug)) continue;
-      const agent = agentMap.get(item.slug)!;
-      saveLocalAgent(item.slug, agent.content);
-      savedCount++;
-    }
-
-    p.log.success(`Saved ${pc.bold(String(savedCount))} agents to ~/.loomcraft/library/`);
-
-    // 10. Preset generation
-    const generatePreset = await p.confirm({
-      message: "Generate a preset from this import?",
-      initialValue: true,
-    });
-
-    if (!p.isCancel(generatePreset) && generatePreset) {
-      const selectedAgents = result.agents.filter((a) => selectedSlugs.has(a.slug));
-
-      const presetSlug = result.projectName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
-
-      const presetYaml = generatePresetYaml(result.projectName, selectedAgents);
-      saveLocalPreset(presetSlug, presetYaml);
-      p.log.success(`Preset saved as ${pc.green(presetSlug)}`);
-    }
+    p.log.success(`Preset written to ${pc.green(outputPath)}`);
+    p.log.info(pc.dim("\nTo share on the marketplace:"));
+    p.log.info(pc.dim("  1. Push agents + preset to a GitHub repo"));
+    p.log.info(pc.dim("     repo/agents/<slug>/AGENT.md"));
+    p.log.info(pc.dim("     repo/presets/<slug>.yaml"));
+    p.log.info(pc.dim("  2. Register on loomcraft.dev/marketplace"));
 
     p.outro(pc.green("Import complete!"));
   } catch (error) {

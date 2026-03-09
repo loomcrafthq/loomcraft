@@ -1,6 +1,5 @@
 import pc from "picocolors";
 import { listAgents, listPresets } from "../lib/library.js";
-import { listLocalResources } from "../lib/local-library.js";
 import { readSkillsJson } from "../lib/writer.js";
 
 function truncate(str: string, max: number): string {
@@ -14,8 +13,6 @@ function padEnd(str: string, len: number): string {
 
 export async function listCommand(type?: string): Promise<void> {
   try {
-    const bundledSlugs = new Set<string>();
-
     if (!type || type === "agents") {
       const agents = await listAgents();
       console.log(pc.bold(pc.cyan("\n  Agents")));
@@ -24,7 +21,6 @@ export async function listCommand(type?: string): Promise<void> {
         console.log(pc.dim("  No agents found."));
       }
       for (const a of agents) {
-        bundledSlugs.add(`agent:${a.slug}`);
         console.log(
           `  ${padEnd(pc.green(a.slug), 30)} ${padEnd(a.name, 25)} ${pc.dim(truncate(a.description, 40))}`
         );
@@ -32,7 +28,6 @@ export async function listCommand(type?: string): Promise<void> {
     }
 
     if (!type || type === "skills") {
-      // Skills now come from skills.json (installed via skills.sh)
       const skillsJson = readSkillsJson();
       console.log(pc.bold(pc.cyan("\n  Skills (from skills.json)")));
       console.log(pc.dim("  " + "─".repeat(60)));
@@ -54,7 +49,6 @@ export async function listCommand(type?: string): Promise<void> {
         console.log(pc.dim("  No presets found."));
       }
       for (const p of presets) {
-        bundledSlugs.add(`preset:${p.slug}`);
         const meta = pc.dim(`(${p.agentCount} agents, ${p.skillCount} skills)`);
         console.log(
           `  ${padEnd(pc.green(p.slug), 30)} ${padEnd(p.name, 25)} ${meta}`
@@ -62,32 +56,13 @@ export async function listCommand(type?: string): Promise<void> {
       }
     }
 
-    // Local library section (~/.loomcraft/library/)
-    const localItems = listLocalResources().filter(
-      (item) => !bundledSlugs.has(`${item.type}:${item.slug}`)
-    );
-
-    if (localItems.length > 0) {
-      console.log(pc.bold(pc.magenta("\n  Installed (marketplace)")));
-      console.log(pc.dim("  " + "─".repeat(60)));
-      for (const item of localItems) {
-        console.log(
-          `  ${padEnd(pc.green(item.slug), 30)} ${pc.dim(`[${item.type}]`)}`
-        );
-      }
-    }
-
     console.log();
   } catch (error) {
-    handleError(error);
+    if (error instanceof Error) {
+      console.error(pc.red(`\n  Error: ${error.message}\n`));
+    } else {
+      console.error(pc.red("\n  An unknown error occurred.\n"));
+    }
+    process.exit(1);
   }
-}
-
-function handleError(error: unknown): void {
-  if (error instanceof Error) {
-    console.error(pc.red(`\n  Error: ${error.message}\n`));
-  } else {
-    console.error(pc.red("\n  An unknown error occurred.\n"));
-  }
-  process.exit(1);
 }

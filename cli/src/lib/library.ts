@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import YAML from "yaml";
+import { isRemoteRef, fetchRemoteAgent, fetchRemotePreset } from "./remote.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "../data");
@@ -103,11 +104,17 @@ export async function listAgents(): Promise<AgentSummary[]> {
 }
 
 export async function getAgent(
-  slug: string
+  slugOrRef: string
 ): Promise<{ slug: string; rawContent: string }> {
-  const filePath = path.join(DATA_DIR, "agents", slug, "AGENT.md");
+  // Remote ref (org/repo/name) → fetch from GitHub
+  if (isRemoteRef(slugOrRef)) {
+    return fetchRemoteAgent(slugOrRef);
+  }
+
+  // Bundled agent
+  const filePath = path.join(DATA_DIR, "agents", slugOrRef, "AGENT.md");
   const raw = fs.readFileSync(filePath, "utf-8");
-  return { slug, rawContent: raw };
+  return { slug: slugOrRef, rawContent: raw };
 }
 
 // ---------------------------------------------------------------------------
@@ -139,9 +146,15 @@ export async function listPresets(): Promise<PresetSummary[]> {
   return presets;
 }
 
-export async function getPreset(slug: string): Promise<Preset> {
-  const filePath = path.join(DATA_DIR, "presets", `${slug}.yaml`);
+export async function getPreset(slugOrRef: string): Promise<Preset> {
+  // Remote ref (org/repo/name) → fetch from GitHub
+  if (isRemoteRef(slugOrRef)) {
+    return fetchRemotePreset(slugOrRef);
+  }
+
+  // Bundled preset
+  const filePath = path.join(DATA_DIR, "presets", `${slugOrRef}.yaml`);
   const raw = fs.readFileSync(filePath, "utf-8");
   const data = YAML.parse(raw) as Preset;
-  return { ...data, slug };
+  return { ...data, slug: slugOrRef };
 }

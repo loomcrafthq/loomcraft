@@ -1,12 +1,5 @@
 import pc from "picocolors";
-import {
-  saveLocalAgent,
-  saveLocalPreset,
-  saveLocalMeta,
-  getLocalMeta,
-  listLocalResources,
-} from "../lib/local-library.js";
-import { validateSlug, fetchWithTimeout, verifyContentHash } from "../lib/security.js";
+import { fetchWithTimeout } from "../lib/security.js";
 
 const DEFAULT_API_URL = "https://loomcraft.dev";
 
@@ -17,19 +10,8 @@ interface MarketplaceItem {
   title: string;
   description: string;
   authorName: string | null;
+  repoRef: string | null;
   installCount: number;
-}
-
-interface InstallResponse {
-  resource: {
-    id: string;
-    type: string;
-    slug: string;
-    title: string;
-    content: string;
-    version: number;
-    contentHash: string | null;
-  };
 }
 
 function padEnd(str: string, len: number): string {
@@ -85,7 +67,12 @@ export async function marketplaceSearchCommand(
 
     console.log(
       pc.dim(
-        `\n  Install with: ${pc.reset("loomcraft marketplace install <slug>")}\n`
+        `\n  Use a preset: ${pc.reset("loomcraft init org/repo/preset-name")}`
+      )
+    );
+    console.log(
+      pc.dim(
+        `  Add an agent: ${pc.reset("loomcraft add agent org/repo/agent-name")}\n`
       )
     );
   } catch (error) {
@@ -95,160 +82,6 @@ export async function marketplaceSearchCommand(
       console.error(pc.red(`\n  ✗ ${error.message}\n`));
     } else {
       console.error(pc.red("\n  ✗ Could not reach the marketplace.\n"));
-    }
-    process.exit(1);
-  }
-}
-
-export async function marketplaceInstallCommand(
-  slug: string
-): Promise<void> {
-  try {
-    validateSlug(slug);
-
-    const url = new URL("/api/cli/marketplace/install", getApiUrl());
-
-    const res = await fetchWithTimeout(url.toString(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug }),
-    });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(body.error ?? `HTTP ${res.status}`);
-    }
-
-    const data = (await res.json()) as InstallResponse;
-    const r = data.resource;
-
-    // Verify content integrity
-    const hashValid = await verifyContentHash(r.content, r.contentHash);
-    if (!hashValid) {
-      throw new Error("Content integrity check failed — hash mismatch");
-    }
-
-    // Save to ~/.loomcraft/library/
-    if (r.type === "agent") {
-      saveLocalAgent(r.slug, r.content);
-    } else if (r.type === "preset") {
-      saveLocalPreset(r.slug, r.content);
-    }
-
-    // Save version metadata
-    const metaType = r.type === "preset" ? "preset" : "agent";
-    saveLocalMeta(metaType as "agent" | "preset", r.slug, {
-      sourceSlug: r.slug,
-      version: r.version,
-      contentHash: r.contentHash,
-    });
-
-    console.log(
-      pc.green(`\n  ✓ Installed "${r.title}" (${r.type}) v${r.version} to ~/.loomcraft/library/\n`)
-    );
-    if (r.type === "agent") {
-      console.log(
-        pc.dim(`  Use it: loomcraft add agent ${r.slug}\n`)
-      );
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
-    } else if (error instanceof Error) {
-      console.error(pc.red(`\n  ✗ ${error.message}\n`));
-    } else {
-      console.error(pc.red("\n  ✗ Installation failed.\n"));
-    }
-    process.exit(1);
-  }
-}
-
-interface CheckUpdateResponse {
-  slug: string;
-  version: number;
-  contentHash: string | null;
-}
-
-export async function marketplaceUpdateCommand(
-  slug?: string
-): Promise<void> {
-  try {
-    if (slug) validateSlug(slug);
-
-    const apiUrl = getApiUrl();
-
-    // Determine which resources to check
-    const toCheck: { slug: string; type: "agent" | "preset" }[] = [];
-
-    if (slug) {
-      for (const type of ["agent", "preset"] as const) {
-        const meta = getLocalMeta(type, slug);
-        if (meta) {
-          toCheck.push({ slug, type });
-          break;
-        }
-      }
-      if (toCheck.length === 0) {
-        console.log(pc.yellow(`\n  No installed resource found with slug "${slug}"\n`));
-        return;
-      }
-    } else {
-      const items = listLocalResources();
-      for (const item of items) {
-        const meta = getLocalMeta(item.type, item.slug);
-        if (meta) {
-          toCheck.push({ slug: item.slug, type: item.type });
-        }
-      }
-      if (toCheck.length === 0) {
-        console.log(pc.dim("\n  No marketplace-installed resources found.\n"));
-        return;
-      }
-    }
-
-    let updatedCount = 0;
-
-    for (const item of toCheck) {
-      const meta = getLocalMeta(item.type, item.slug);
-      if (!meta) continue;
-
-      const checkUrl = new URL("/api/cli/marketplace/check-update", apiUrl);
-      checkUrl.searchParams.set("slug", item.slug);
-
-      const checkRes = await fetchWithTimeout(checkUrl.toString());
-      if (!checkRes.ok) continue;
-
-      const remote = (await checkRes.json()) as CheckUpdateResponse;
-
-      if (remote.version <= meta.version) {
-        console.log(
-          pc.dim(`  ${item.slug} — up to date (v${meta.version})`)
-        );
-        continue;
-      }
-
-      console.log(
-        pc.cyan(`  ${item.slug} — v${meta.version} → v${remote.version}`)
-      );
-
-      await marketplaceInstallCommand(item.slug);
-      updatedCount++;
-    }
-
-    if (updatedCount === 0) {
-      console.log(pc.green("\n  All resources are up to date.\n"));
-    } else {
-      console.log(
-        pc.green(`\n  ✓ Updated ${updatedCount} resource${updatedCount > 1 ? "s" : ""}.\n`)
-      );
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
-    } else if (error instanceof Error) {
-      console.error(pc.red(`\n  ✗ ${error.message}\n`));
-    } else {
-      console.error(pc.red("\n  ✗ Update check failed.\n"));
     }
     process.exit(1);
   }

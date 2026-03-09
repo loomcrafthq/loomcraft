@@ -4,11 +4,7 @@ import { listCommand } from "./commands/list.js";
 import { addCommand } from "./commands/add.js";
 import { initCommand } from "./commands/init.js";
 import { syncCommand } from "./commands/sync.js";
-import {
-  marketplaceSearchCommand,
-  marketplaceInstallCommand,
-  marketplaceUpdateCommand,
-} from "./commands/marketplace.js";
+import { marketplaceSearchCommand } from "./commands/marketplace.js";
 import { importCommand } from "./commands/import.js";
 import { resolveTarget, DEFAULT_TARGET, listTargetNames, BUILTIN_TARGETS } from "./lib/target.js";
 import { loadConfig } from "./lib/config.js";
@@ -33,9 +29,9 @@ program
 
 program
   .command("add")
-  .description("Add an agent from the library or a skill reference to skills.json")
+  .description("Add an agent or skill — bundled or remote (org/repo/name)")
   .argument("<type>", "Type: agent or skill")
-  .argument("<slug>", "Agent slug or skill reference (e.g. loomcraft/skills/auth-rbac)")
+  .argument("<slug>", "Agent slug, remote ref (org/repo/name), or skill ref")
   .option("--target <name>", `Output target: ${[...listTargetNames(), "custom"].join(", ")}`, DEFAULT_TARGET)
   .option("--target-dir <dir>", "Custom target directory")
   .option("--context-file <file>", "Custom context file name")
@@ -49,8 +45,8 @@ program
 
 program
   .command("init")
-  .description("Initialize a project with a preset (agents + skills.json + workflow)")
-  .argument("[preset]", "Preset slug (interactive if omitted)")
+  .description("Initialize a project with a preset — bundled or remote (org/repo/name)")
+  .argument("[preset]", "Preset slug or remote ref (interactive if omitted)")
   .option("--add-agent <slugs...>", "Add extra agents")
   .option("--remove-agent <slugs...>", "Remove agents from preset")
   .option("--claude", "Use Claude Code target (.claude/ + CLAUDE.md)")
@@ -114,14 +110,10 @@ program
     await importCommand(targetPath, opts);
   });
 
-const mp = program
+program
   .command("marketplace")
   .alias("mp")
-  .description("Browse and install community presets");
-
-mp.command("search")
-  .alias("list")
-  .description("Search the marketplace (alias: list)")
+  .description("Search community presets and agents")
   .argument("[query]", "Search query")
   .option("--type <type>", "Filter by type: agent, preset")
   .option("--sort <sort>", "Sort: popular, recent", "popular")
@@ -130,19 +122,5 @@ mp.command("search")
       await marketplaceSearchCommand(query, opts);
     }
   );
-
-mp.command("install")
-  .description("Install a resource from the marketplace")
-  .argument("<slug>", "Resource slug to install")
-  .action(async (slug: string) => {
-    await marketplaceInstallCommand(slug);
-  });
-
-mp.command("update")
-  .description("Check and apply updates for marketplace-installed resources")
-  .argument("[slug]", "Resource slug to update (all if omitted)")
-  .action(async (slug?: string) => {
-    await marketplaceUpdateCommand(slug);
-  });
 
 program.parse();
