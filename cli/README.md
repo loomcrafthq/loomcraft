@@ -70,15 +70,19 @@ Running `loomcraft init saas` creates:
 ```
 .claude/
   agents/
-    database.md          # schema design, migrations, queries
-    backend.md           # APIs, auth, business logic
-    frontend.md          # components, state, accessibility
-    ux-ui.md             # design system, usability, responsive
-    tester.md            # unit, integration, e2e, TDD
-    review-qa.md         # code review, quality assurance
-    security.md          # OWASP Top 10, audit, hardening
-CLAUDE.md                # project context (auto-read by Claude Code)
-skills.json              # skills.sh references
+    database/AGENT.md    # schema design, migrations, queries
+    backend/AGENT.md     # APIs, auth, business logic
+    frontend/AGENT.md    # components, state, accessibility
+    ux-ui/AGENT.md       # design system, usability, responsive
+    tester/AGENT.md      # unit, integration, e2e, TDD
+    review-qa/AGENT.md   # code review, quality assurance
+    security/AGENT.md    # OWASP Top 10, audit, hardening
+  skills/
+    brainstorming/SKILL.md
+    ticket-craft/SKILL.md
+    ...16 more            # installed from skills.sh
+CLAUDE.md                 # project context (auto-read by Claude Code)
+skills.json               # skills.sh references
 ```
 
 Claude Code discovers agents in `.claude/agents/` automatically. The `skills.json` file references external skills from the [skills.sh](https://skills.sh) ecosystem.
