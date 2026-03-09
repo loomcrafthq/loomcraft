@@ -1,7 +1,7 @@
 {
   "name": "@loomcraft/cli",
   "version": "3.0.1",
-  "description": "AI workflow preset manager — 7 universal agents, skills.sh integration, 10 presets",
+  "description": "Preset manager for AI agents and skills — fetch from GitHub, scaffold your project",
   "type": "module",
   "license": "MIT",
   "author": "folpe",
@@ -33,11 +33,9 @@
     "lc": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "data"
+    "dist"
   ],
   "scripts": {
-    "prebuild": "node scripts/sync-library.js",
     "build": "tsup",
     "dev": "tsup --watch"
   },

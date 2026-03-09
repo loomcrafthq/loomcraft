@@ -1,18 +1,8 @@
-import type { Preset } from "./library.js";
+import type { Preset, AgentInfo } from "./types.js";
 import type { TargetConfig } from "./target.js";
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-export interface AgentInfo {
-  slug: string;
-  name: string;
-  description: string;
-}
-
-// ---------------------------------------------------------------------------
-// CLAUDE.md / Context file generation
+// Full CLAUDE.md generation (from preset)
 // ---------------------------------------------------------------------------
 
 export function generateContextFile(
@@ -26,7 +16,7 @@ export function generateContextFile(
   lines.push(`# ${preset.name}`);
   lines.push("");
 
-  // Stack section (auto-detected)
+  // Stack section
   lines.push("<!-- loomcraft:stack:start -->");
   lines.push("## Stack");
   lines.push("");
@@ -35,7 +25,7 @@ export function generateContextFile(
   lines.push("<!-- loomcraft:stack:end -->");
   lines.push("");
 
-  // Workflow section (from preset)
+  // Workflow section
   lines.push(generateWorkflowSection(preset));
   lines.push("");
 
@@ -43,13 +33,13 @@ export function generateContextFile(
   lines.push(generateAgentsSection(agents, target));
   lines.push("");
 
-  // Skills section (references to skills.json)
+  // Skills section
   if (preset.skills.length > 0) {
     lines.push(generateSkillsSection(preset.skills));
     lines.push("");
   }
 
-  // Custom section (user-managed, never overwritten)
+  // Custom section
   lines.push("<!-- loomcraft:custom:start -->");
   lines.push("## Custom Rules");
   lines.push("");
@@ -67,7 +57,6 @@ export function generateContextFile(
 
 function generateWorkflowSection(preset: Preset): string {
   const lines: string[] = [];
-  const w = preset.workflow;
 
   lines.push("<!-- loomcraft:workflow:start -->");
   lines.push("## Workflow");
@@ -76,41 +65,44 @@ function generateWorkflowSection(preset: Preset): string {
   lines.push("");
 
   // Pipeline
-  lines.push("### Pipeline");
-  lines.push("");
-  lines.push("When implementing a feature, delegate to agents in this order:");
-  lines.push("");
-  for (let i = 0; i < w.pipeline.length; i++) {
-    const step = w.pipeline[i];
-    let line = `${i + 1}. **${step.agent}**`;
-    if (step.condition) line += ` — ${step.condition}`;
-    if (step.mode) line += ` (${step.mode})`;
-    if (step.scope) line += ` [scope: ${step.scope}]`;
-    lines.push(line);
+  if (preset.pipeline.length > 0) {
+    lines.push("### Pipeline");
+    lines.push("");
+    lines.push("When implementing a feature, delegate to agents in this order:");
+    lines.push("");
+    for (let i = 0; i < preset.pipeline.length; i++) {
+      const step = preset.pipeline[i];
+      let line = `${i + 1}. **${step.agent}**`;
+      if (step.when) line += ` — ${step.when}`;
+      if (step.mode) line += ` (${step.mode})`;
+      if (step.scope) line += ` [scope: ${step.scope}]`;
+      lines.push(line);
+    }
+    lines.push("");
   }
-  lines.push("");
 
   // Verification
-  if (w.verification.length > 0) {
+  if (preset.verification.length > 0) {
     lines.push("### Verification");
     lines.push("");
     lines.push("After implementation, always run:");
     lines.push("");
-    for (let i = 0; i < w.verification.length; i++) {
-      lines.push(`${i + 1}. **${w.verification[i]}**`);
+    for (let i = 0; i < preset.verification.length; i++) {
+      lines.push(`${i + 1}. **${preset.verification[i]}**`);
     }
     lines.push("");
   }
 
   // Conventions
-  const hasConventions = w.finalization.commits || w.finalization.branch;
-  if (hasConventions) {
+  if (preset.conventions) {
     lines.push("### Conventions");
     lines.push("");
-    if (w.finalization.commits === "conventional") {
+    if (preset.conventions.commits === "conventional") {
       lines.push("- Commits: conventional commits (`feat`, `fix`, `chore`, etc.)");
     }
-    lines.push(`- Branches: \`${w.finalization.branch}\``);
+    if (preset.conventions.branches) {
+      lines.push(`- Branches: \`${preset.conventions.branches}\``);
+    }
     lines.push("");
   }
 
@@ -130,7 +122,7 @@ export function generateAgentsSection(agents: AgentInfo[], target: TargetConfig)
   lines.push("");
 
   if (agents.length > 0) {
-    lines.push(`This project uses ${agents.length} agents in \`${target.dir}/${target.agentsSubdir}/\`. Claude Code auto-delegates based on each agent's description.`);
+    lines.push(`This project uses ${agents.length} agents in \`${target.dir}/${target.agentsSubdir}/\`.`);
     lines.push("");
     lines.push("| Agent | Description |");
     lines.push("|-------|-------------|");
@@ -152,10 +144,9 @@ export function generateSkillsSection(skills: string[]): string {
   lines.push("<!-- loomcraft:skills:start -->");
   lines.push("## Skills");
   lines.push("");
-  lines.push("Installed via `skills.json` (skills.sh). Auto-detected by trigger phrases.");
+  lines.push("Installed via `skills.json` (skills.sh).");
   lines.push("");
   for (const skill of skills) {
-    // Show just the skill name from the full ref
     const name = skill.split("/").pop() || skill;
     lines.push(`- \`${name}\``);
   }
@@ -168,27 +159,22 @@ export function generateSkillsSection(skills: string[]): string {
 // Merge (preserves user content outside loomcraft-managed sections)
 // ---------------------------------------------------------------------------
 
-export interface MergeOptions {
-  preset?: Preset;
-}
-
 export function mergeContextFile(
   existingContent: string,
   agents: AgentInfo[],
   target: TargetConfig,
   skills: string[],
-  stackSummary?: string,
-  options: MergeOptions = {}
+  opts: { stackSummary?: string; preset?: Preset } = {}
 ): string {
   let result = existingContent;
 
-  // Replace stack section if provided
-  if (stackSummary) {
+  // Stack section
+  if (opts.stackSummary) {
     const stackSection = [
       "<!-- loomcraft:stack:start -->",
       "## Stack",
       "",
-      stackSummary,
+      opts.stackSummary,
       "",
       "<!-- loomcraft:stack:end -->",
     ].join("\n");
@@ -198,14 +184,13 @@ export function mergeContextFile(
     }
   }
 
-  // Replace workflow section if preset is provided
-  if (options.preset) {
-    const workflowSection = generateWorkflowSection(options.preset);
+  // Workflow section
+  if (opts.preset) {
+    const workflowSection = generateWorkflowSection(opts.preset);
     const workflowRegex = /<!-- loomcraft:workflow:start -->[\s\S]*?<!-- loomcraft:workflow:end -->/;
     if (workflowRegex.test(result)) {
       result = result.replace(workflowRegex, workflowSection);
     } else {
-      // Insert before agents section, or append
       const agentsMarker = /<!-- loomcraft:agents:start -->/;
       if (agentsMarker.test(result)) {
         result = result.replace(agentsMarker, workflowSection + "\n\n<!-- loomcraft:agents:start -->");
@@ -215,7 +200,7 @@ export function mergeContextFile(
     }
   }
 
-  // Replace agents section
+  // Agents section
   const agentsSection = generateAgentsSection(agents, target);
   const agentsRegex = /<!-- loomcraft:agents:start -->[\s\S]*?<!-- loomcraft:agents:end -->/;
   if (agentsRegex.test(result)) {
@@ -224,7 +209,7 @@ export function mergeContextFile(
     result = result.trimEnd() + "\n\n" + agentsSection + "\n";
   }
 
-  // Replace skills section
+  // Skills section
   const skillsRegex = /<!-- loomcraft:skills:start -->[\s\S]*?<!-- loomcraft:skills:end -->/;
   if (skills.length > 0) {
     const skillsSection = generateSkillsSection(skills);
@@ -237,7 +222,7 @@ export function mergeContextFile(
     result = result.replace(skillsRegex, "").replace(/\n{3,}/g, "\n\n");
   }
 
-  // Ensure custom section exists
+  // Custom section
   const customRegex = /<!-- loomcraft:custom:start -->/;
   if (!customRegex.test(result)) {
     result = result.trimEnd() + "\n\n" + [

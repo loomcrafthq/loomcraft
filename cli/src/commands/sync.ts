@@ -3,34 +3,28 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import pc from "picocolors";
 import matter from "gray-matter";
-import { mergeContextFile, type AgentInfo } from "../lib/generator.js";
+import { mergeContextFile } from "../lib/generator.js";
 import { readSkillsJson } from "../lib/writer.js";
 import type { TargetConfig } from "../lib/target.js";
-import { loadPresetSlug } from "../lib/config.js";
-import { getPreset } from "../lib/library.js";
+import type { AgentInfo } from "../lib/types.js";
+import { loadConfig } from "../lib/config.js";
+import { fetchPreset } from "../lib/remote.js";
 
-/**
- * Scans the current project's agent directory and skills.json,
- * then regenerates the context file with up-to-date sections.
- */
 export async function syncCommand(target: TargetConfig): Promise<void> {
   const cwd = process.cwd();
   const agentsDir = path.join(cwd, target.dir, target.agentsSubdir);
 
-  // Discover installed agents (if any)
+  // Discover installed agents
   const agentInfos: AgentInfo[] = [];
-
   if (fs.existsSync(agentsDir)) {
-    const installedSlugs = fs
-      .readdirSync(agentsDir, { withFileTypes: true })
+    const slugs = fs.readdirSync(agentsDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name)
       .sort();
 
-    for (const slug of installedSlugs) {
+    for (const slug of slugs) {
       const agentFile = path.join(agentsDir, slug, "AGENT.md");
       if (!fs.existsSync(agentFile)) continue;
-
       try {
         const raw = fs.readFileSync(agentFile, "utf-8");
         const { data } = matter(raw);
@@ -46,11 +40,16 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
     }
   }
 
-  // Read skills from skills.json
+  // Read skills
   const skillsJson = readSkillsJson(cwd);
   const skills = skillsJson?.skills ?? [];
 
-  // Re-install skills via skills.sh
+  if (agentInfos.length === 0 && skills.length === 0) {
+    console.log(pc.yellow(`\n  Nothing to sync. No agents or skills found.\n`));
+    return;
+  }
+
+  // Re-install skills
   if (skills.length > 0) {
     const repoSkills = new Map<string, string[]>();
     for (const ref of skills) {
@@ -65,16 +64,12 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
         repoSkills.set(`${parts[0]}/${parts[1]}`, []);
       }
     }
-    console.log(pc.dim(`  Re-installing skills via skills.sh (${repoSkills.size} repos)...`));
+    console.log(pc.dim(`  Re-installing skills (${repoSkills.size} repos)...`));
     for (const [repo, skillNames] of repoSkills) {
       const url = `https://github.com/${repo}`;
       const skillFlag = skillNames.length > 0 ? `--skill ${skillNames.join(" ")} ` : "";
       try {
-        execSync(`npx -y skills add ${url} ${skillFlag}-y`, {
-          stdio: "pipe",
-          timeout: 60_000,
-          cwd,
-        });
+        execSync(`npx -y skills add ${url} ${skillFlag}-y`, { stdio: "pipe", timeout: 60_000, cwd });
         console.log(pc.green(`  ✓ ${repo}`));
       } catch {
         console.log(pc.yellow(`  ⚠ ${repo} — skipped`));
@@ -82,33 +77,26 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
     }
   }
 
-  // Nothing to sync?
-  if (agentInfos.length === 0 && skills.length === 0) {
-    console.log(pc.yellow(`\n  Nothing to sync. No agents or skills found.\n`));
-    console.log(pc.dim(`  Run "loomcraft init" to set up a preset, or install skills via skills.sh.\n`));
-    return;
-  }
-
-  // Load preset from config for workflow section
-  const presetSlug = loadPresetSlug(cwd);
+  // Load preset from config
+  const config = loadConfig(cwd);
   let preset = undefined;
-  if (presetSlug) {
+  if (config?.preset) {
     try {
-      preset = await getPreset(presetSlug);
+      preset = await fetchPreset(config.preset);
     } catch {
-      console.log(pc.dim(`  Preset "${presetSlug}" not found, skipping workflow update.`));
+      console.log(pc.dim(`  Preset "${config.preset}" unavailable, skipping workflow update.`));
     }
   }
 
-  // Merge context file if it exists
+  // Merge context file
   const contextFilePath = path.join(cwd, target.contextFile);
   if (fs.existsSync(contextFilePath)) {
-    const existingContent = fs.readFileSync(contextFilePath, "utf-8");
-    const merged = mergeContextFile(existingContent, agentInfos, target, skills, undefined, { preset });
+    const existing = fs.readFileSync(contextFilePath, "utf-8");
+    const merged = mergeContextFile(existing, agentInfos, target, skills, { preset });
     fs.writeFileSync(contextFilePath, merged, "utf-8");
-    console.log(pc.green(`\n  ✓ ${target.contextFile} merged (${agentInfos.length} agents, ${skills.length} skills)`));
+    console.log(pc.green(`\n  ✓ ${target.contextFile} synced (${agentInfos.length} agents, ${skills.length} skills)`));
   } else {
-    console.log(pc.yellow(`\n  ⚠ ${target.contextFile} not found. Run "loomcraft init" to generate it.`));
+    console.log(pc.yellow(`\n  ⚠ ${target.contextFile} not found. Run "loomcraft add" first.`));
   }
 
   console.log("");

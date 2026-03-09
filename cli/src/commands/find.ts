@@ -1,17 +1,14 @@
 import pc from "picocolors";
 import { fetchWithTimeout } from "../lib/security.js";
+import { trackFind } from "../lib/telemetry.js";
 
 const DEFAULT_API_URL = "https://loomcraft.dev";
 
-interface MarketplaceItem {
-  id: string;
+interface SearchItem {
+  ref: string;
+  name: string;
   type: string;
-  slug: string;
-  title: string;
-  description: string;
-  authorName: string | null;
-  repoRef: string | null;
-  installCount: number;
+  installs: number;
 }
 
 function padEnd(str: string, len: number): string {
@@ -31,20 +28,23 @@ function getApiUrl(): string {
   return url;
 }
 
-export async function marketplaceSearchCommand(
+export async function findCommand(
   query?: string,
   opts?: { type?: string; sort?: string }
 ): Promise<void> {
   try {
-    const url = new URL("/api/cli/marketplace", getApiUrl());
+    const url = new URL("/api/search", getApiUrl());
     if (query) url.searchParams.set("q", query);
     if (opts?.type) url.searchParams.set("type", opts.type);
     if (opts?.sort) url.searchParams.set("sort", opts.sort);
+    url.searchParams.set("limit", "20");
 
     const res = await fetchWithTimeout(url.toString());
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const data = (await res.json()) as { items: MarketplaceItem[] };
+    const data = (await res.json()) as { items: SearchItem[] };
+
+    trackFind(query || "", data.items.length);
 
     if (data.items.length === 0) {
       console.log(pc.dim("\n  No results found.\n"));
@@ -52,32 +52,24 @@ export async function marketplaceSearchCommand(
     }
 
     console.log(
-      pc.bold(pc.cyan(`\n  Marketplace${query ? ` — "${query}"` : ""}`))
+      pc.bold(pc.cyan(`\n  Results${query ? ` for "${query}"` : ""}`))
     );
     console.log(pc.dim("  " + "─".repeat(70)));
 
     for (const item of data.items) {
       const type = pc.dim(`[${item.type}]`);
-      const installs = pc.dim(`↓${item.installCount}`);
-      const author = item.authorName ? pc.dim(`by ${item.authorName}`) : "";
+      const installs = item.installs > 0 ? pc.dim(`↓${item.installs}`) : "";
       console.log(
-        `  ${padEnd(pc.green(item.slug), 25)} ${padEnd(type, 14)} ${padEnd(truncate(item.title, 25), 27)} ${installs} ${author}`
+        `  ${padEnd(pc.green(item.ref), 40)} ${padEnd(type, 12)} ${padEnd(truncate(item.name, 20), 22)} ${installs}`
       );
     }
 
     console.log(
-      pc.dim(
-        `\n  Use a preset: ${pc.reset("loomcraft init org/repo/preset-name")}`
-      )
-    );
-    console.log(
-      pc.dim(
-        `  Add an agent: ${pc.reset("loomcraft add agent org/repo/agent-name")}\n`
-      )
+      pc.dim(`\n  Use: ${pc.reset("loomcraft add <ref>")}\n`)
     );
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      console.error(pc.red("\n  ✗ Request timed out. Check your connection.\n"));
+      console.error(pc.red("\n  ✗ Request timed out.\n"));
     } else if (error instanceof Error) {
       console.error(pc.red(`\n  ✗ ${error.message}\n`));
     } else {

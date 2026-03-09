@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { TargetConfig } from "./target.js";
-import { mergeContextFile, type AgentInfo, type MergeOptions } from "./generator.js";
-import type { Preset } from "./library.js";
+import type { AgentInfo, Preset } from "./types.js";
+import { mergeContextFile } from "./generator.js";
 
 function ensureDir(dirPath: string): void {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -48,23 +48,6 @@ export function readSkillsJson(cwd = process.cwd()): SkillsJson | null {
   }
 }
 
-export function addSkillToJson(skillRef: string, cwd = process.cwd()): SkillsJson {
-  let skillsJson = readSkillsJson(cwd);
-  if (!skillsJson) {
-    skillsJson = {
-      name: path.basename(cwd),
-      version: "1.0.0",
-      description: "",
-      skills: [],
-    };
-  }
-  if (!skillsJson.skills.includes(skillRef)) {
-    skillsJson.skills.push(skillRef);
-  }
-  writeSkillsJson(skillsJson, cwd);
-  return skillsJson;
-}
-
 // ---------------------------------------------------------------------------
 // Context file (CLAUDE.md / .cursorrules)
 // ---------------------------------------------------------------------------
@@ -92,8 +75,7 @@ export function writeContextFile(
       options.agents,
       target,
       options.skills ?? [],
-      options.stackSummary,
-      { preset: options.preset }
+      { stackSummary: options.stackSummary, preset: options.preset }
     );
     fs.writeFileSync(filePath, merged, "utf-8");
   } else {
