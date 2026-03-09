@@ -55,17 +55,33 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
 
   // Re-install skills via skills.sh
   if (skills.length > 0) {
-    try {
-      console.log(pc.dim("  Re-installing skills via skills.sh..."));
-      execSync("npx -y skills add .", {
-        stdio: "inherit",
-        timeout: 120_000,
-        cwd,
-      });
-      console.log(pc.green("  ✓ Skills updated"));
-    } catch {
-      console.log(pc.yellow("  ⚠ Could not update skills automatically."));
-      console.log(pc.dim("    Run manually: npx skills add ."));
+    const repoSkills = new Map<string, string[]>();
+    for (const ref of skills) {
+      const parts = ref.split("/");
+      if (parts.length >= 3) {
+        const repo = `${parts[0]}/${parts[1]}`;
+        const skill = parts.slice(2).join("/");
+        const list = repoSkills.get(repo) ?? [];
+        list.push(skill);
+        repoSkills.set(repo, list);
+      } else if (parts.length === 2) {
+        repoSkills.set(`${parts[0]}/${parts[1]}`, []);
+      }
+    }
+    console.log(pc.dim(`  Re-installing skills via skills.sh (${repoSkills.size} repos)...`));
+    for (const [repo, skillNames] of repoSkills) {
+      const url = `https://github.com/${repo}`;
+      const skillFlag = skillNames.length > 0 ? `--skill ${skillNames.join(" ")} ` : "";
+      try {
+        execSync(`npx -y skills add ${url} ${skillFlag}-y`, {
+          stdio: "pipe",
+          timeout: 60_000,
+          cwd,
+        });
+        console.log(pc.green(`  ✓ ${repo}`));
+      } catch {
+        console.log(pc.yellow(`  ⚠ ${repo} — skipped`));
+      }
     }
   }
 

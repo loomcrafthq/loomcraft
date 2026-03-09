@@ -1,6 +1,6 @@
 {
   "name": "@loomcraft/cli",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "AI workflow preset manager — 7 universal agents, skills.sh integration, 10 presets",
   "type": "module",
   "license": "MIT",

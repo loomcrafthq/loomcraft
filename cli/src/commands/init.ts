@@ -188,7 +188,7 @@ async function interactiveInit(target: TargetConfig, targetExplicit?: boolean): 
   s.stop("Project files generated.");
 
   // Install skills via skills.sh
-  await installSkills();
+  await installSkills(preset.skills);
 
   p.outro(pc.green(`Done! ${agentSlugs.length} agent(s), ${preset.skills.length} skill(s), ${target.contextFile} ready.`));
 }
@@ -226,7 +226,7 @@ async function nonInteractiveInit(presetSlug: string, opts: InitOptions): Promis
   saveConfig(target, process.cwd(), preset.slug);
 
   // Install skills via skills.sh
-  await installSkills();
+  await installSkills(preset.skills);
 
   console.log(
     pc.bold(
@@ -296,16 +296,48 @@ async function generateAndWrite(
 
 // --- Install skills via skills.sh ---
 
-async function installSkills(): Promise<void> {
-  try {
-    console.log(pc.dim("\n  Installing skills via skills.sh..."));
-    execSync("npx -y skills add .", {
-      stdio: "inherit",
-      timeout: 120_000,
-    });
-    console.log(pc.green("  ✓ Skills installed"));
-  } catch {
-    console.log(pc.yellow("  ⚠ Could not install skills automatically."));
-    console.log(pc.dim("    Run manually: npx skills add ."));
+async function installSkills(skills: string[]): Promise<void> {
+  if (skills.length === 0) return;
+
+  // Group skills by repo: "org/repo/skill-name" → { "org/repo": ["skill-name", ...] }
+  const repoSkills = new Map<string, string[]>();
+  for (const ref of skills) {
+    const parts = ref.split("/");
+    if (parts.length >= 3) {
+      const repo = `${parts[0]}/${parts[1]}`;
+      const skill = parts.slice(2).join("/");
+      const list = repoSkills.get(repo) ?? [];
+      list.push(skill);
+      repoSkills.set(repo, list);
+    } else if (parts.length === 2) {
+      // "org/repo" with no skill name — install all
+      repoSkills.set(`${parts[0]}/${parts[1]}`, []);
+    }
+  }
+
+  console.log(pc.dim(`\n  Installing skills via skills.sh (${repoSkills.size} repos)...`));
+
+  let installed = 0;
+  for (const [repo, skillNames] of repoSkills) {
+    const url = `https://github.com/${repo}`;
+    const skillFlag = skillNames.length > 0
+      ? `--skill ${skillNames.join(" ")} `
+      : "";
+    const cmd = `npx -y skills add ${url} ${skillFlag}-y`;
+    try {
+      execSync(cmd, {
+        stdio: "pipe",
+        timeout: 60_000,
+      });
+      installed++;
+      console.log(pc.green(`  ✓ ${repo} (${skillNames.length || "all"} skills)`));
+    } catch {
+      console.log(pc.yellow(`  ⚠ ${repo} — skipped`));
+      console.log(pc.dim(`    Run manually: npx skills add ${url} ${skillFlag}`));
+    }
+  }
+
+  if (installed === repoSkills.size) {
+    console.log(pc.green(`  ✓ All skills installed`));
   }
 }

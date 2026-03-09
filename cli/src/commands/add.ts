@@ -72,15 +72,22 @@ async function addSkill(skillRef: string): Promise<void> {
   console.log(pc.green(`\n  ✓ Added "${skillRef}" to skills.json (${skillsJson.skills.length} skills total)`));
 
   // Install via skills.sh
-  try {
-    console.log(pc.dim("  Installing via skills.sh..."));
-    execSync("npx -y skills add .", {
-      stdio: "inherit",
-      timeout: 120_000,
-    });
-    console.log(pc.green("  ✓ Skills installed\n"));
-  } catch {
-    console.log(pc.yellow("  ⚠ Could not install automatically."));
-    console.log(pc.dim("    Run manually: npx skills add .\n"));
+  const parts = skillRef.split("/");
+  if (parts.length >= 2) {
+    const repo = `${parts[0]}/${parts[1]}`;
+    const url = `https://github.com/${repo}`;
+    const skillName = parts.length >= 3 ? parts.slice(2).join("/") : "";
+    const skillFlag = skillName ? `--skill ${skillName} ` : "";
+    try {
+      console.log(pc.dim(`  Installing via skills.sh...`));
+      execSync(`npx -y skills add ${url} ${skillFlag}-y`, {
+        stdio: "pipe",
+        timeout: 60_000,
+      });
+      console.log(pc.green(`  ✓ ${repo}${skillName ? `/${skillName}` : ""} installed\n`));
+    } catch {
+      console.log(pc.yellow(`  ⚠ Could not install automatically.`));
+      console.log(pc.dim(`    Run manually: npx skills add ${url} ${skillFlag}\n`));
+    }
   }
 }
