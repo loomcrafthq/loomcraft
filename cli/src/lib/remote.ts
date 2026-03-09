@@ -146,7 +146,7 @@ export async function fetchAgentIndex(
   repo = DEFAULT_AGENTS_REPO
 ): Promise<AgentIndexEntry[]> {
   const [org, repoName] = repo.split("/");
-  const url = rawUrl(org, repoName, "index.json");
+  const url = rawUrl(org, repoName, "agents.json");
 
   const res = await fetchWithTimeout(url);
   if (!res.ok) return [];
@@ -158,7 +158,7 @@ export async function fetchPresetIndex(
   repo = DEFAULT_PRESETS_REPO
 ): Promise<PresetIndexEntry[]> {
   const [org, repoName] = repo.split("/");
-  const url = rawUrl(org, repoName, "index.json");
+  const url = rawUrl(org, repoName, "presets.json");
 
   const res = await fetchWithTimeout(url);
   if (!res.ok) return [];
