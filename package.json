@@ -7,10 +7,9 @@
   "author": "folpe",
   "repository": {
     "type": "git",
-    "url": "https://github.com/loomcrafthq/loomcraft",
-    "directory": "cli"
+    "url": "https://github.com/loomcrafthq/loomcraft"
   },
-  "homepage": "https://github.com/loomcrafthq/loomcraft/tree/main/cli#readme",
+  "homepage": "https://github.com/loomcrafthq/loomcraft#readme",
   "keywords": [
     "claude",
     "claude-code",
