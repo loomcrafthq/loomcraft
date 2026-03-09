@@ -8,12 +8,22 @@ agents:
   - tester
   - review-qa
 skills:
-  - loomcraft/skills/brainstorm
-  - loomcraft/skills/plan
-  - loomcraft/skills/commit-conventions
-  - loomcraft/skills/code-review
-  - loomcraft/skills/seo-optimization
-  - loomcraft/skills/cms-patterns
+  - obra/superpowers/brainstorming
+  - obra/superpowers/writing-plans
+  - obra/superpowers/executing-plans
+  - obra/superpowers/systematic-debugging
+  - obra/superpowers/requesting-code-review
+  - obra/superpowers/receiving-code-review
+  - github/awesome-copilot/conventional-commit
+  - loomcrafthq/skills/ticket-craft
+  - loomcrafthq/skills/testing-patterns
+  - anthropics/skills/frontend-design
+  - vercel-labs/agent-skills/web-design-guidelines
+  - vercel-labs/next-skills/next-best-practices
+  - coreyhaines31/marketingskills/seo-audit
+  - coreyhaines31/marketingskills/copywriting
+  - wshobson/agents/tailwind-design-system
+  - anthropics/skills/webapp-testing
 workflow:
   preparation:
     source: manual

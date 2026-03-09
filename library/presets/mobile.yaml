@@ -9,13 +9,18 @@ agents:
   - review-qa
   - security
 skills:
-  - loomcraft/skills/brainstorm
-  - loomcraft/skills/plan
-  - loomcraft/skills/linear-conventions
-  - loomcraft/skills/commit-conventions
-  - loomcraft/skills/code-review
-  - loomcraft/skills/testing-patterns
-  - loomcraft/skills/react-native-patterns
+  - obra/superpowers/brainstorming
+  - obra/superpowers/writing-plans
+  - obra/superpowers/executing-plans
+  - obra/superpowers/systematic-debugging
+  - obra/superpowers/requesting-code-review
+  - obra/superpowers/receiving-code-review
+  - github/awesome-copilot/conventional-commit
+  - loomcrafthq/skills/ticket-craft
+  - loomcrafthq/skills/testing-patterns
+  - obra/superpowers/test-driven-development
+  - vercel-labs/agent-skills/vercel-react-native-skills
+  - anthropics/skills/webapp-testing
 workflow:
   preparation:
     source: linear
