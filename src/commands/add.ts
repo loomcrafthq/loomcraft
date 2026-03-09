@@ -231,20 +231,29 @@ async function addSingleAgent(ref: string, target: TargetConfig): Promise<void> 
   const filePath = writeAgent(target, agent.slug, agent.rawContent);
   console.log(pc.green(`\n  ✓ Agent "${agent.slug}" added (${filePath})`));
 
-  // Update CLAUDE.md agents section
+  // Update or create CLAUDE.md agents section
   const contextFilePath = path.join(process.cwd(), target.contextFile);
+  const agentsDir = path.join(process.cwd(), target.dir, target.agentsSubdir);
+  const allAgents = readAgentsFromDir(agentsDir);
+
   if (fs.existsSync(contextFilePath)) {
-    // Read existing agents from the agents directory to rebuild the full list
-    const agentsDir = path.join(process.cwd(), target.dir, target.agentsSubdir);
-    const allAgents = readAgentsFromDir(agentsDir);
     const existing = fs.readFileSync(contextFilePath, "utf-8");
     const merged = mergeContextFile(existing, allAgents, target, []);
     fs.writeFileSync(contextFilePath, merged, "utf-8");
     console.log(pc.green(`  ✓ ${target.contextFile} updated`));
+  } else {
+    const content = generateAgentsSection(allAgents, target) + "\n";
+    fs.writeFileSync(contextFilePath, content, "utf-8");
+    console.log(pc.green(`  ✓ ${target.contextFile} created`));
   }
 
-  // Update config
-  addAgentToConfig(ref);
+  // Update or create config
+  const config = loadConfig();
+  if (config) {
+    addAgentToConfig(ref);
+  } else {
+    saveConfig(target, process.cwd(), { agents: [ref] });
+  }
 
   // Telemetry
   trackAdd(ref, "agent");
