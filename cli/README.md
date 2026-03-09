@@ -77,7 +77,7 @@ Running `loomcraft init saas` creates:
     tester.md            # unit, integration, e2e, TDD
     review-qa.md         # code review, quality assurance
     security.md          # OWASP Top 10, audit, hardening
-  CLAUDE.md              # project context (auto-read by Claude Code)
+CLAUDE.md                # project context (auto-read by Claude Code)
 skills.json              # skills.sh references
 ```
 
