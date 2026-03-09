@@ -17,37 +17,32 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
   const cwd = process.cwd();
   const agentsDir = path.join(cwd, target.dir, target.agentsSubdir);
 
-  if (!fs.existsSync(agentsDir)) {
-    console.error(pc.red(`\n  Error: No agents directory found. Expected ${target.dir}/${target.agentsSubdir}/\n`));
-    console.log(pc.dim(`  Run "loomcraft init" first.\n`));
-    process.exit(1);
-  }
-
-  // Discover installed agents
-  const installedSlugs = fs
-    .readdirSync(agentsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
-
-  // Read agent metadata
+  // Discover installed agents (if any)
   const agentInfos: AgentInfo[] = [];
 
-  for (const slug of installedSlugs) {
-    const agentFile = path.join(agentsDir, slug, "AGENT.md");
-    if (!fs.existsSync(agentFile)) continue;
+  if (fs.existsSync(agentsDir)) {
+    const installedSlugs = fs
+      .readdirSync(agentsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort();
 
-    try {
-      const raw = fs.readFileSync(agentFile, "utf-8");
-      const { data } = matter(raw);
-      const fm = data as Record<string, unknown>;
-      agentInfos.push({
-        slug,
-        name: (fm.name as string) || slug,
-        description: (fm.description as string) || "",
-      });
-    } catch {
-      agentInfos.push({ slug, name: slug, description: "" });
+    for (const slug of installedSlugs) {
+      const agentFile = path.join(agentsDir, slug, "AGENT.md");
+      if (!fs.existsSync(agentFile)) continue;
+
+      try {
+        const raw = fs.readFileSync(agentFile, "utf-8");
+        const { data } = matter(raw);
+        const fm = data as Record<string, unknown>;
+        agentInfos.push({
+          slug,
+          name: (fm.name as string) || slug,
+          description: (fm.description as string) || "",
+        });
+      } catch {
+        agentInfos.push({ slug, name: slug, description: "" });
+      }
     }
   }
 
@@ -85,6 +80,13 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
         console.log(pc.yellow(`  ⚠ ${repo} — skipped`));
       }
     }
+  }
+
+  // Nothing to sync?
+  if (agentInfos.length === 0 && skills.length === 0) {
+    console.log(pc.yellow(`\n  Nothing to sync. No agents or skills found.\n`));
+    console.log(pc.dim(`  Run "loomcraft init" to set up a preset, or install skills via skills.sh.\n`));
+    return;
   }
 
   // Load preset from config for workflow section
