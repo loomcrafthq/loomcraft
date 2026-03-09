@@ -290,6 +290,7 @@ async function generateAndWrite(
     agents: agentInfos,
     skills: preset.skills,
     stackSummary,
+    preset,
   });
   console.log(pc.green(`  ✓ ${target.contextFile} ${merge ? "merged" : "generated"}`));
 }

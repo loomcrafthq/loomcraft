@@ -6,6 +6,8 @@ import matter from "gray-matter";
 import { mergeContextFile, type AgentInfo } from "../lib/generator.js";
 import { readSkillsJson } from "../lib/writer.js";
 import type { TargetConfig } from "../lib/target.js";
+import { loadPresetSlug } from "../lib/config.js";
+import { getPreset } from "../lib/library.js";
 
 /**
  * Scans the current project's agent directory and skills.json,
@@ -85,11 +87,22 @@ export async function syncCommand(target: TargetConfig): Promise<void> {
     }
   }
 
+  // Load preset from config for workflow section
+  const presetSlug = loadPresetSlug(cwd);
+  let preset = undefined;
+  if (presetSlug) {
+    try {
+      preset = await getPreset(presetSlug);
+    } catch {
+      console.log(pc.dim(`  Preset "${presetSlug}" not found, skipping workflow update.`));
+    }
+  }
+
   // Merge context file if it exists
   const contextFilePath = path.join(cwd, target.contextFile);
   if (fs.existsSync(contextFilePath)) {
     const existingContent = fs.readFileSync(contextFilePath, "utf-8");
-    const merged = mergeContextFile(existingContent, agentInfos, target, skills);
+    const merged = mergeContextFile(existingContent, agentInfos, target, skills, undefined, { preset });
     fs.writeFileSync(contextFilePath, merged, "utf-8");
     console.log(pc.green(`\n  ✓ ${target.contextFile} merged (${agentInfos.length} agents, ${skills.length} skills)`));
   } else {

@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { TargetConfig } from "./target.js";
-import { mergeContextFile, type AgentInfo } from "./generator.js";
+import { mergeContextFile, type AgentInfo, type MergeOptions } from "./generator.js";
+import type { Preset } from "./library.js";
 
 function ensureDir(dirPath: string): void {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -73,6 +74,7 @@ export interface WriteContextOptions {
   agents?: AgentInfo[];
   skills?: string[];
   stackSummary?: string;
+  preset?: Preset;
 }
 
 export function writeContextFile(
@@ -90,7 +92,8 @@ export function writeContextFile(
       options.agents,
       target,
       options.skills ?? [],
-      options.stackSummary
+      options.stackSummary,
+      { preset: options.preset }
     );
     fs.writeFileSync(filePath, merged, "utf-8");
   } else {

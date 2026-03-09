@@ -70,27 +70,15 @@ function generateWorkflowSection(preset: Preset): string {
   const w = preset.workflow;
 
   lines.push("<!-- loomcraft:workflow:start -->");
-  lines.push("## Implementation Workflow");
+  lines.push("## Workflow");
   lines.push("");
-
-  // Preparation
-  lines.push("### Preparation");
-  if (w.preparation.source === "linear") {
-    lines.push("1. Fetch the next logical ticket from the backlog (unblocked, highest priority)");
-    lines.push("2. Ask for confirmation before starting");
-    lines.push('3. Move ticket to "In Progress"');
-  } else if (w.preparation.source === "github-issues") {
-    lines.push("1. Fetch the next open issue (highest priority label)");
-    lines.push("2. Ask for confirmation before starting");
-    lines.push("3. Assign yourself to the issue");
-  } else {
-    lines.push("1. Ask the user what to implement next");
-    lines.push("2. Confirm scope before starting");
-  }
+  lines.push(`Preset: **${preset.name}** — ${preset.description}`);
   lines.push("");
 
   // Pipeline
   lines.push("### Pipeline");
+  lines.push("");
+  lines.push("When implementing a feature, delegate to agents in this order:");
   lines.push("");
   for (let i = 0; i < w.pipeline.length; i++) {
     const step = w.pipeline[i];
@@ -104,7 +92,9 @@ function generateWorkflowSection(preset: Preset): string {
 
   // Verification
   if (w.verification.length > 0) {
-    lines.push("### Verification (always run)");
+    lines.push("### Verification");
+    lines.push("");
+    lines.push("After implementation, always run:");
     lines.push("");
     for (let i = 0; i < w.verification.length; i++) {
       lines.push(`${i + 1}. **${w.verification[i]}**`);
@@ -112,19 +102,18 @@ function generateWorkflowSection(preset: Preset): string {
     lines.push("");
   }
 
-  // Finalization
-  lines.push("### Finalization");
-  if (w.finalization.commits === "conventional") {
-    lines.push("- Commit using conventional commits (feat, fix, chore, etc.)");
+  // Conventions
+  const hasConventions = w.finalization.commits || w.finalization.branch;
+  if (hasConventions) {
+    lines.push("### Conventions");
+    lines.push("");
+    if (w.finalization.commits === "conventional") {
+      lines.push("- Commits: conventional commits (`feat`, `fix`, `chore`, etc.)");
+    }
+    lines.push(`- Branches: \`${w.finalization.branch}\``);
+    lines.push("");
   }
-  lines.push(`- Push on branch: \`${w.finalization.branch}\``);
-  if (w.preparation.source === "linear") {
-    lines.push('- Comment a summary on the Linear ticket, move to "Done"');
-  } else if (w.preparation.source === "github-issues") {
-    lines.push("- Comment a summary on the GitHub issue, close it");
-  }
-  lines.push("- Propose the next ticket");
-  lines.push("");
+
   lines.push("<!-- loomcraft:workflow:end -->");
 
   return lines.join("\n");
@@ -179,12 +168,17 @@ export function generateSkillsSection(skills: string[]): string {
 // Merge (preserves user content outside loomcraft-managed sections)
 // ---------------------------------------------------------------------------
 
+export interface MergeOptions {
+  preset?: Preset;
+}
+
 export function mergeContextFile(
   existingContent: string,
   agents: AgentInfo[],
   target: TargetConfig,
   skills: string[],
-  stackSummary?: string
+  stackSummary?: string,
+  options: MergeOptions = {}
 ): string {
   let result = existingContent;
 
@@ -201,6 +195,23 @@ export function mergeContextFile(
     const stackRegex = /<!-- loomcraft:stack:start -->[\s\S]*?<!-- loomcraft:stack:end -->/;
     if (stackRegex.test(result)) {
       result = result.replace(stackRegex, stackSection);
+    }
+  }
+
+  // Replace workflow section if preset is provided
+  if (options.preset) {
+    const workflowSection = generateWorkflowSection(options.preset);
+    const workflowRegex = /<!-- loomcraft:workflow:start -->[\s\S]*?<!-- loomcraft:workflow:end -->/;
+    if (workflowRegex.test(result)) {
+      result = result.replace(workflowRegex, workflowSection);
+    } else {
+      // Insert before agents section, or append
+      const agentsMarker = /<!-- loomcraft:agents:start -->/;
+      if (agentsMarker.test(result)) {
+        result = result.replace(agentsMarker, workflowSection + "\n\n<!-- loomcraft:agents:start -->");
+      } else {
+        result = result.trimEnd() + "\n\n" + workflowSection + "\n";
+      }
     }
   }
 
@@ -225,10 +236,6 @@ export function mergeContextFile(
   } else if (skillsRegex.test(result)) {
     result = result.replace(skillsRegex, "").replace(/\n{3,}/g, "\n\n");
   }
-
-  // Replace workflow section if present (don't add if not already there)
-  const workflowRegex = /<!-- loomcraft:workflow:start -->[\s\S]*?<!-- loomcraft:workflow:end -->/;
-  // Workflow is only replaced on full init, not on sync — so we leave it alone here
 
   // Ensure custom section exists
   const customRegex = /<!-- loomcraft:custom:start -->/;
