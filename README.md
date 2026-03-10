@@ -7,65 +7,87 @@ Loomcraft scaffolds production-ready presets into your project. Each preset bund
 ## Quick start
 
 ```bash
-# Interactive — pick a preset
-npx @loomcraft/cli init
+# Interactive — pick a preset or agents
+npx @loomcraft/cli add
 
 # One-liner with a preset
-npx @loomcraft/cli init saas
-npx @loomcraft/cli init api
+npx @loomcraft/cli add loomcrafthq/presets/saas
+npx @loomcraft/cli add loomcrafthq/presets/api
 ```
 
 ## Commands
 
-### `loomcraft init [preset]`
+### `loomcraft add [ref]`
 
-Scaffold a preset with agents, skills.json, and a context file.
+Add a preset or agent from a GitHub repo.
 
 ```bash
-loomcraft init                    # interactive wizard
-loomcraft init saas               # scaffold the SaaS preset
-loomcraft init landing            # scaffold the landing preset
+loomcraft add                              # interactive wizard
+loomcraft add loomcrafthq/presets/saas     # add the SaaS preset
+loomcraft add loomcrafthq/agents/backend   # add a single agent
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--add-agent <slugs...>` | Add extra agents to the preset |
-| `--remove-agent <slugs...>` | Remove agents from the preset |
+| `--agent` | Force treating ref as an agent |
+| `--preset` | Force treating ref as a preset |
+| `--claude` | Use Claude Code target (.claude/ + CLAUDE.md) |
+| `--cursor` | Use Cursor target (.cursor/ + .cursorrules) |
+| `--target <name>` | Output target (claude-code, cursor, custom) |
+| `--target-dir <dir>` | Custom target directory |
+| `--context-file <file>` | Custom context file name |
 | `--overwrite` | Overwrite existing context file instead of merging |
 
-**Context file merge:** When `CLAUDE.md` already exists, `init` preserves your custom content and only updates the Loomcraft-managed sections. Use `--overwrite` to replace the entire file.
+**Context file merge:** When `CLAUDE.md` already exists, `add` preserves your custom content and only updates the Loomcraft-managed sections. Use `--overwrite` to replace the entire file.
 
-### `loomcraft list [type]`
+### `loomcraft find [query]`
 
-```bash
-loomcraft list           # everything
-loomcraft list agents    # agents only
-loomcraft list presets   # presets only
-```
-
-### `loomcraft import`
-
-Import an existing project setup into Loomcraft format.
+Search community presets and agents.
 
 ```bash
-loomcraft import
+loomcraft find                # list all
+loomcraft find tailwind       # search by keyword
+loomcraft find --type agent   # agents only
 ```
 
-### `loomcraft marketplace`
+| Flag | Description |
+|------|-------------|
+| `--type <type>` | Filter: agent or preset |
+| `--sort <sort>` | Sort: popular, recent (default: popular) |
 
-Browse and install community-contributed presets.
+### `loomcraft sync`
+
+Re-install skills and update the context file.
 
 ```bash
-loomcraft marketplace search              # list all
-loomcraft marketplace search tailwind     # search by keyword
-loomcraft marketplace install ticket-craft
+loomcraft sync
 ```
 
-Alias: `lc mp search`
+| Flag | Description |
+|------|-------------|
+| `--target <name>` | Output target |
+| `--target-dir <dir>` | Custom target directory |
+| `--context-file <file>` | Custom context file name |
+
+### `loomcraft clean`
+
+Remove all files created by Loomcraft.
+
+```bash
+loomcraft clean
+loomcraft clean --dry-run    # preview without deleting
+```
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Preview without deleting |
+| `--target <name>` | Output target |
+| `--target-dir <dir>` | Custom target directory |
+| `--context-file <file>` | Custom context file name |
 
 ## What's generated
 
-Running `loomcraft init saas` creates:
+Running `loomcraft add loomcrafthq/presets/saas` creates:
 
 ```
 .claude/
